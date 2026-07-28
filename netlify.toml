@@ -1,0 +1,23 @@
+[build]
+  publish = "public"
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Runs generate-listings automatically once a day so camp listings stay in
+# sync with Airtable without anyone clicking "Generate" in /admin.
+[functions."generate-listings"]
+  schedule = "@daily"
+
+# Password-protect the admin page via Netlify redirect with basic auth
+# (actual auth is handled in the function itself for simplicity)
+[[redirects]]
+  from = "/admin"
+  to = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/admin/*"
+  to = "/admin.html"
+  status = 200

@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>sortd admin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@400;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    :root {
+      --cream: #F5F0E8; --card: #FBF8F0; --navy: #27314A;
+      --sky: #29ABE2; --pink: #F4A7C3; --red: #EF3D2F;
+      --green: #2BAD7E; --border: #EDE7D8; --muted: #888;
+      --fd: 'Baloo 2', sans-serif; --fb: 'Nunito', sans-serif; --fs: 'Caveat', cursive;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: var(--fb);
+      background: var(--navy);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 40px 16px;
+    }
+
+    /* ── LOGO ── */
+    .logo {
+      font-family: var(--fd);
+      font-weight: 800;
+      font-size: 32px;
+      color: var(--pink);
+      letter-spacing: -1px;
+      margin-bottom: 4px;
+    }
+    .logo__sub {
+      font-family: var(--fs);
+      font-size: 16px;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 36px;
+    }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 16px;
+    }
+
+    .card__title {
+      font-family: var(--fd);
+      font-weight: 800;
+      font-size: 18px;
+      color: var(--navy);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card__title .ti { color: var(--red); font-size: 20px; }
+
+    .card__desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 20px;
+    }
+
+    /* ── LOGIN ── */
+    #login-screen { }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: var(--fb);
+      font-size: 14px;
+      color: var(--navy);
+      background: var(--cream);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    .field input:focus { border-color: var(--sky); }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 30px;
+      font-family: var(--fd);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn:hover { opacity: 0.88; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    .btn--red   { background: var(--red);   color: white; }
+    .btn--sky   { background: var(--sky);   color: white; }
+    .btn--ghost { background: var(--cream); color: var(--navy); margin-top: 10px; }
+
+    .error-msg {
+      background: #FFF0EE;
+      border: 1px solid #FFCFC9;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: var(--red);
+      margin-top: 12px;
+      display: none;
+    }
+
+    /* ── MAIN SCREEN ── */
+    #main-screen { display: none; }
+
+    .stat-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .stat {
+      background: var(--cream);
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat__n {
+      font-family: var(--fd);
+      font-weight: 800;
+      font-size: 24px;
+      color: var(--navy);
+      line-height: 1;
+    }
+    .stat__l {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .filter-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .filter-row select {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-family: var(--fb);
+      font-size: 13px;
+      color: var(--navy);
+      background: var(--cream);
+      outline: none;
+    }
+    .filter-row select:focus { border-color: var(--sky); }
+
+    /* ── LOG ── */
+    .log-card {
+      background: var(--card);
+      border-radius: 20px;
+      padding: 20px 24px;
+      width: 100%;
+      max-width: 420px;
+      display: none;
+    }
+    .log-card.visible { display: block; }
+
+    .log-title {
+      font-family: var(--fd);
+      font-weight: 700;
+      font-size: 13px;
+      color: var(--navy);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .log {
+      background: var(--navy);
+      border-radius: 10px;
+      padding: 14px;
+      height: 220px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      color: rgba(255,255,255,0.75);
+      line-height: 1.6;
+    }
+
+    .log .ok  { color: #2BAD7E; }
+    .log .err { color: #EF3D2F; }
+    .log .dim { color: rgba(255,255,255,0.35); }
+    .log .hi  { color: var(--pink); font-weight: bold; }
+
+    /* ── SUCCESS BANNER ── */
+    .success-banner {
+      background: #E6F9F1;
+      border: 1px solid #A8E6CC;
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .success-banner.visible { display: flex; }
+    .success-banner .ti { color: var(--green); font-size: 22px; flex-shrink: 0; }
+    .success-banner__text { font-size: 13px; color: #1A6644; line-height: 1.5; }
+    .success-banner__n { font-family: var(--fd); font-weight: 800; font-size: 18px; color: #1A6644; }
+
+    /* ── SPINNER ── */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+  </style>
+</head>
+<body>
+
+  <div class="logo">sortd</div>
+  <div class="logo__sub">admin dashboard</div>
+
+  <!-- ── LOGIN ── -->
+  <div class="card" id="login-screen">
+    <div class="card__title">
+      <i class="ti ti-lock"></i> Sign in
+    </div>
+    <div class="card__desc">Enter your admin password to access the Sortd dashboard.</div>
+
+    <div class="field">
+      <label>Password</label>
+      <input type="password" id="password-input" placeholder="••••••••" autocomplete="current-password">
+    </div>
+
+    <button class="btn btn--red" onclick="login()">
+      <i class="ti ti-arrow-right"></i> Continue
+    </button>
+
+    <div class="error-msg" id="login-error">
+      Wrong password. Try again.
+    </div>
+  </div>
+
+  <!-- ── MAIN ── -->
+  <div class="card" id="main-screen">
+    <div class="card__title">
+      <i class="ti ti-list-check"></i> Generate listing pages
+    </div>
+    <div class="card__desc">
+      Pulls all live camps from Airtable and generates one SEO page per camp. Takes about 30–60 seconds for all 93 records.
+    </div>
+
+    <div class="stat-row">
+      <div class="stat">
+        <div class="stat__n" id="stat-total">—</div>
+        <div class="stat__l">Live camps</div>
+      </div>
+      <div class="stat">
+        <div class="stat__n" id="stat-last">—</div>
+        <div class="stat__l">Last run</div>
+      </div>
+      <div class="stat">
+        <div class="stat__n" id="stat-time">—</div>
+        <div class="stat__l">Time taken</div>
+      </div>
+    </div>
+
+    <div class="filter-row">
+      <select id="county-filter">
+        <option value="">All counties</option>
+        <option value="dublin">Dublin only</option>
+        <option value="wicklow">Wicklow only</option>
+        <option value="meath">Meath only</option>
+        <option value="kildare">Kildare only</option>
+        <option value="cork">Cork only</option>
+        <option value="galway">Galway only</option>
+      </select>
+    </div>
+
+    <button class="btn btn--red" id="generate-btn" onclick="generate()">
+      <i class="ti ti-rocket"></i> Generate all pages
+    </button>
+
+    <button class="btn btn--ghost" onclick="logout()">
+      <i class="ti ti-logout"></i> Sign out
+    </button>
+
+    <div class="success-banner" id="success-banner">
+      <i class="ti ti-circle-check"></i>
+      <div class="success-banner__text">
+        <div class="success-banner__n" id="success-count">—</div>
+        pages generated successfully. Sitemap updated.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── LOG ── -->
+  <div class="log-card" id="log-card">
+    <div class="log-title">
+      <i class="ti ti-terminal"></i> Activity log
+    </div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    let savedPassword = '';
+
+    // ── LOGIN ──
+    document.getElementById('password-input').addEventListener('keydown', e => {
+      if (e.key === 'Enter') login();
+    });
+
+    function login() {
+      const pw = document.getElementById('password-input').value.trim();
+      if (!pw) return;
+      savedPassword = pw;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-screen').style.display = 'block';
+      document.getElementById('login-error').style.display = 'none';
+      loadStats();
+    }
+
+    function logout() {
+      savedPassword = '';
+      document.getElementById('login-screen').style.display = 'block';
+      document.getElementById('main-screen').style.display = 'none';
+      document.getElementById('password-input').value = '';
+    }
+
+    // ── STATS ──
+    async function loadStats() {
+      const last = localStorage.getItem('sortd_last_run');
+      const lastCount = localStorage.getItem('sortd_last_count');
+      const lastTime = localStorage.getItem('sortd_last_time');
+      if (last) document.getElementById('stat-last').textContent = last;
+      if (lastCount) document.getElementById('stat-total').textContent = lastCount;
+      if (lastTime) document.getElementById('stat-time').textContent = lastTime;
+    }
+
+    // ── GENERATE ──
+    async function generate() {
+      const btn = document.getElementById('generate-btn');
+      const county = document.getElementById('county-filter').value;
+      const logCard = document.getElementById('log-card');
+      const logEl = document.getElementById('log');
+      const successBanner = document.getElementById('success-banner');
+
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner"></div> Generating…';
+      successBanner.classList.remove('visible');
+      logCard.classList.add('visible');
+      logEl.innerHTML = '';
+
+      function log(msg, cls = '') {
+        const line = document.createElement('div');
+        if (cls) line.className = cls;
+        line.textContent = msg;
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+
+      log('▶ Starting generation…', 'hi');
+      log(`  County filter: ${county || 'all'}`, 'dim');
+      log('  Fetching records from Airtable…', 'dim');
+
+      try {
+        const res = await fetch('/.netlify/functions/generate-listings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: savedPassword, county: county || null }),
+        });
+
+        const data = await res.json();
+
+        if (res.status === 401) {
+          log('✗ Wrong password.', 'err');
+          logout();
+          document.getElementById('login-error').style.display = 'block';
+          return;
+        }
+
+        if (!res.ok || data.error) {
+          log(`✗ Error: ${data.error}`, 'err');
+          return;
+        }
+
+        // Log each page
+        log(`  ${data.generated} records fetched`, 'dim');
+        log('', '');
+        (data.pages || []).forEach(p => log(`  ✓ ${p}`, 'ok'));
+        if (data.skipped > 0) log(`  ⚠ ${data.skipped} records skipped (missing fields)`, '');
+        log('', '');
+        log(`✓ Done in ${data.elapsed} — ${data.generated} pages generated`, 'ok');
+        log('  Sitemap and manifest updated.', 'dim');
+
+        // Update stats
+        const now = new Date().toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
+        localStorage.setItem('sortd_last_run', now);
+        localStorage.setItem('sortd_last_count', data.generated);
+        localStorage.setItem('sortd_last_time', data.elapsed);
+        document.getElementById('stat-last').textContent = now;
+        document.getElementById('stat-total').textContent = data.generated;
+        document.getElementById('stat-time').textContent = data.elapsed;
+
+        // Success banner
+        document.getElementById('success-count').textContent = data.generated;
+        successBanner.classList.add('visible');
+
+      } catch (err) {
+        log(`✗ Network error: ${err.message}`, 'err');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-rocket"></i> Generate all pages';
+      }
+    }
+  </script>
+
+</body>
+</html>

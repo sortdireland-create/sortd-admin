@@ -1,0 +1,9 @@
+{
+  "name": "sortd-admin",
+  "version": "1.0.0",
+  "description": "Sortd listing page generator — Netlify Functions",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {}
+}
