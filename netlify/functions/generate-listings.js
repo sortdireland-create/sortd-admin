@@ -7,274 +7,274 @@ const crypto = require('crypto'); // BUG 1 FIX: require once at top, not inside 
 // ============================================================
 // CONFIG
 // ============================================================
-const AIRTABLE_BASE  = 'appuyWkAmTRI4lN5r';
+const AIRTABLE_BASE = 'appuyWkAmTRI4lN5r';
 const AIRTABLE_TABLE = 'tblziKRbWXA1veyuz';
-const BASE_URL       = 'https://sortd-ireland.ie';
+const BASE_URL = 'https://sortd-ireland.ie';
 
 const F = {
-  NAME:        'fldTrzk8wQ8sefLvj',
-  PROVIDER:    'fldTeVX37izewUhIA',
-  AGE_MIN:     'fldlFGnJMY1xYt56Y',
-  AGE_MAX:     'fld8InKRs58HRZgVX',
-  CATEGORY:    'fldkrBMNkG1HKhLqv',
-  DAYS:        'fldD9VsUEU1FUmQ9A',
-  TIMES:       'fldTO3plXqY0oX7wA',
-  COST:        'fldCBKMjvwvcYHUip',
-  LOCATION:    'fldo79Q8gFhWoHqMd',
-  AREA:        'fldUeF6R78CuZF39k',
-  COUNTY:      'fldNPedJO4jIgRa0j',
-  BOOKING_URL: 'fldEhcai8rQQuUWtY',
-  BOOKING:     'fldNP69Qh7Hw3YZx2',
-  INSTAGRAM:   'fldgem2tL1nbTbgPr',
-  ACTIVITIES:  'fldELpg99Iz6mNrIB',
-  NOTES:       'fldf0DnzcUkCcg2gE',
-  LIVE:        'fldBQ6YMcDuYPJkne',
-  WEEKS:       'fldL6Cf1fiQIdIAby',
-  TAGS:        'fldJi4Gme38iKvovO',
+NAME: 'fldTrzk8wQ8sefLvj',
+PROVIDER: 'fldTeVX37izewUhIA',
+AGE_MIN: 'fldlFGnJMY1xYt56Y',
+AGE_MAX: 'fld8InKRs58HRZgVX',
+CATEGORY: 'fldkrBMNkG1HKhLqv',
+DAYS: 'fldD9VsUEU1FUmQ9A',
+TIMES: 'fldTO3plXqY0oX7wA',
+COST: 'fldCBKMjvwvcYHUip',
+LOCATION: 'fldo79Q8gFhWoHqMd',
+AREA: 'fldUeF6R78CuZF39k',
+COUNTY: 'fldNPedJO4jIgRa0j',
+BOOKING_URL: 'fldEhcai8rQQuUWtY',
+BOOKING: 'fldNP69Qh7Hw3YZx2',
+INSTAGRAM: 'fldgem2tL1nbTbgPr',
+ACTIVITIES: 'fldELpg99Iz6mNrIB',
+NOTES: 'fldf0DnzcUkCcg2gE',
+LIVE: 'fldBQ6YMcDuYPJkne',
+WEEKS: 'fldL6Cf1fiQIdIAby',
+TAGS: 'fldJi4Gme38iKvovO',
 };
 
 const WEEK_DATES = {
-  'Week 1':'29 Jun – 3 Jul','Week 2':'6–10 Jul','Week 3':'13–17 Jul',
-  'Week 4':'20–24 Jul','Week 5':'27–31 Jul','Week 6':'3–7 Aug',
-  'Week 7':'10–14 Aug','Week 8':'17–21 Aug','Week 9':'24–28 Aug',
+'Week 1':'29 Jun – 3 Jul','Week 2':'6–10 Jul','Week 3':'13–17 Jul',
+'Week 4':'20–24 Jul','Week 5':'27–31 Jul','Week 6':'3–7 Aug',
+'Week 7':'10–14 Aug','Week 8':'17–21 Aug','Week 9':'24–28 Aug',
 };
 const WEEK_START_DATES = {
-  'Week 1':'Mon 29 June 2026','Week 2':'Mon 6 July 2026','Week 3':'Mon 13 July 2026',
-  'Week 4':'Mon 20 July 2026','Week 5':'Mon 27 July 2026','Week 6':'Mon 3 August 2026',
-  'Week 7':'Mon 10 August 2026','Week 8':'Mon 17 August 2026','Week 9':'Mon 24 August 2026',
+'Week 1':'Mon 29 June 2026','Week 2':'Mon 6 July 2026','Week 3':'Mon 13 July 2026',
+'Week 4':'Mon 20 July 2026','Week 5':'Mon 27 July 2026','Week 6':'Mon 3 August 2026',
+'Week 7':'Mon 10 August 2026','Week 8':'Mon 17 August 2026','Week 9':'Mon 24 August 2026',
 };
 const CATEGORY_CONFIG = {
-  'Tennis':                { icon:'ti-ball-tennis',      colour:'#29ABE2' },
-  'Football':              { icon:'ti-ball-football',    colour:'#2BAD7E' },
-  'GAA':                   { icon:'ti-ball-football',    colour:'#2BAD7E' },
-  'Swimming':              { icon:'ti-swimming',         colour:'#29ABE2' },
-  'Adventure':             { icon:'ti-mountain',         colour:'#2BAD7E' },
-  'Multi-Activity':        { icon:'ti-stars',            colour:'#29ABE2' },
-  'Sport — Multi-activity':{ icon:'ti-stars',            colour:'#29ABE2' },
-  'Performing arts':       { icon:'ti-masks-theater',    colour:'#F7A800' },
-  'Drama':                 { icon:'ti-masks-theater',    colour:'#F7A800' },
-  'Dance':                 { icon:'ti-music',            colour:'#F4A7C3' },
-  'Music':                 { icon:'ti-music',            colour:'#F4A7C3' },
-  'Arts & Crafts':         { icon:'ti-palette',          colour:'#F7A800' },
-  'STEM / LEGO':           { icon:'ti-building-factory', colour:'#29ABE2' },
-  'STEM':                  { icon:'ti-circuit-board',    colour:'#29ABE2' },
-  'Nature':                { icon:'ti-tree',             colour:'#2BAD7E' },
-  'Language':              { icon:'ti-language',         colour:'#29ABE2' },
-  'default':               { icon:'ti-star',             colour:'#29ABE2' },
+'Tennis': { icon:'ti-ball-tennis', colour:'#29ABE2' },
+'Football': { icon:'ti-ball-football', colour:'#2BAD7E' },
+'GAA': { icon:'ti-ball-football', colour:'#2BAD7E' },
+'Swimming': { icon:'ti-swimming', colour:'#29ABE2' },
+'Adventure': { icon:'ti-mountain', colour:'#2BAD7E' },
+'Multi-Activity': { icon:'ti-stars', colour:'#29ABE2' },
+'Sport — Multi-activity':{ icon:'ti-stars', colour:'#29ABE2' },
+'Performing arts': { icon:'ti-masks-theater', colour:'#F7A800' },
+'Drama': { icon:'ti-masks-theater', colour:'#F7A800' },
+'Dance': { icon:'ti-music', colour:'#F4A7C3' },
+'Music': { icon:'ti-music', colour:'#F4A7C3' },
+'Arts & Crafts': { icon:'ti-palette', colour:'#F7A800' },
+'STEM / LEGO': { icon:'ti-building-factory', colour:'#29ABE2' },
+'STEM': { icon:'ti-circuit-board', colour:'#29ABE2' },
+'Nature': { icon:'ti-tree', colour:'#2BAD7E' },
+'Language': { icon:'ti-language', colour:'#29ABE2' },
+'default': { icon:'ti-star', colour:'#29ABE2' },
 };
 // Static / hub pages not driven by Airtable records.
 // Add new hub/category/county pages here as they go live.
 const STATIC_PAGES = [
-  { path: '/',                                changefreq: 'daily',   priority: '1.0' },
-  { path: '/about',                           changefreq: 'monthly', priority: '0.5' },
-  { path: '/how-it-works',                    changefreq: 'monthly', priority: '0.5' },
-  { path: '/recommend',                       changefreq: 'monthly', priority: '0.4' },
-  { path: '/privacy-policy',                  changefreq: 'yearly',  priority: '0.2' },
-  { path: '/neurodivergent-camps-ireland',    changefreq: 'weekly',  priority: '0.8' },
-  { path: '/dublin/northside/camps',          changefreq: 'daily',   priority: '0.9' },
-  { path: '/dublin/southdublin/camps',        changefreq: 'daily',   priority: '0.9' },
-  { path: '/dublin/citycentre/camps',         changefreq: 'daily',   priority: '0.9' },
+{ path: '/', changefreq: 'daily', priority: '1.0' },
+{ path: '/about', changefreq: 'monthly', priority: '0.5' },
+{ path: '/how-it-works', changefreq: 'monthly', priority: '0.5' },
+{ path: '/recommend', changefreq: 'monthly', priority: '0.4' },
+{ path: '/privacy-policy', changefreq: 'yearly', priority: '0.2' },
+{ path: '/neurodivergent-camps-ireland', changefreq: 'weekly', priority: '0.8' },
+{ path: '/dublin/northside/camps', changefreq: 'daily', priority: '0.9' },
+{ path: '/dublin/southdublin/camps', changefreq: 'daily', priority: '0.9' },
+{ path: '/dublin/citycentre/camps', changefreq: 'daily', priority: '0.9' },
 ];
 
 const CAVEAT_NOTES = {
-  'Tennis':          'all abilities welcome — just bring a racket ↗',
-  'Drama':           'no experience needed — just a big personality ↗',
-  'Performing arts': 'no experience needed — just a big personality ↗',
-  'Dance':           'no experience needed — just bring your best moves ↗',
-  'Music':           'beginners welcome — just bring the enthusiasm ↗',
-  'Swimming':        'all levels welcome — just bring a towel ↗',
-  'Adventure':       'all abilities welcome — adventure awaits ↗',
-  'Arts & Crafts':   'no experience needed — just bring your imagination ↗',
-  'STEM / LEGO':     'no experience needed — just bring your curiosity ↗',
-  'STEM':            'no experience needed — just bring your curiosity ↗',
-  'Nature':          'all welcome — just bring your wellies ↗',
-  'Football':        'all abilities welcome — just bring your boots ↗',
-  'GAA':             'all abilities welcome — just bring your gum shield ↗',
-  'default':         'something for everyone — places fill fast ↗',
+'Tennis': 'all abilities welcome — just bring a racket ↗',
+'Drama': 'no experience needed — just a big personality ↗',
+'Performing arts': 'no experience needed — just a big personality ↗',
+'Dance': 'no experience needed — just bring your best moves ↗',
+'Music': 'beginners welcome — just bring the enthusiasm ↗',
+'Swimming': 'all levels welcome — just bring a towel ↗',
+'Adventure': 'all abilities welcome — adventure awaits ↗',
+'Arts & Crafts': 'no experience needed — just bring your imagination ↗',
+'STEM / LEGO': 'no experience needed — just bring your curiosity ↗',
+'STEM': 'no experience needed — just bring your curiosity ↗',
+'Nature': 'all welcome — just bring your wellies ↗',
+'Football': 'all abilities welcome — just bring your boots ↗',
+'GAA': 'all abilities welcome — just bring your gum shield ↗',
+'default': 'something for everyone — places fill fast ↗',
 };
 
 // ============================================================
 // HELPERS
 // ============================================================
 function makeSlug(provider, name) {
-  const clean = s => s.toLowerCase()
-    .replace(/[\u2010-\u2015]/g,'-') // BUG FIX: normalize en-dash/em-dash/etc to a plain hyphen BEFORE stripping,
-                                     // otherwise "Ages 8–10" loses the dash entirely and becomes "ages810"
-    .replace(/[àáâãäå]/g,'a').replace(/[èéêë]/g,'e')
-    .replace(/[ìíîï]/g,'i').replace(/[òóôõö]/g,'o')
-    .replace(/[ùúûü]/g,'u').replace(/[^a-z0-9\s-]/g,'')
-    .trim().replace(/\s+/g,'-').replace(/-+/g,'-');
-  const p = clean(provider);
-  const n = clean(name);
-  // Avoid doubling: if camp name already starts with provider slug, use name only
-  return n.startsWith(p) ? n : `${p}-${n}`;
+const clean = s => s.toLowerCase()
+.replace(/[‐-―]/g,'-') // BUG FIX: normalize en-dash/em-dash/etc to a plain hyphen BEFORE stripping,
+// otherwise "Ages 8–10" loses the dash entirely and becomes "ages810"
+.replace(/[àáâãäå]/g,'a').replace(/[èéêë]/g,'e')
+.replace(/[ìíîï]/g,'i').replace(/[òóôõö]/g,'o')
+.replace(/[ùúûü]/g,'u').replace(/[^a-z0-9\s-]/g,'')
+.trim().replace(/\s+/g,'-').replace(/-+/g,'-');
+const p = clean(provider);
+const n = clean(name);
+// Avoid doubling: if camp name already starts with provider slug, use name only
+return n.startsWith(p) ? n : `${p}-${n}`;
 }
 function makeCountySlug(c) { return c.toLowerCase().replace(/\s+/g,'-'); }
 function esc(s) {
-  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
-    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+.replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 function escJson(s) {
-  return String(s||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n');
+return String(s||'').replace(/\\/g,'\\\\').replace(/"/g,'\\"').replace(/\n/g,'\\n');
 }
 
 // ============================================================
 // AIRTABLE FETCH
 // ============================================================
 async function fetchAllLiveRecords(apiKey, filterCounty) {
-  const records = [];
-  let offset = null;
+const records = [];
+let offset = null;
 
-  // Use field ID in formula since we're using returnFieldsByFieldId=true
-  // fldBQ6YMcDuYPJkne = Live checkbox field
-  let formula = `{fldBQ6YMcDuYPJkne}=1`;
-  if (filterCounty) formula = `AND({fldBQ6YMcDuYPJkne}=1,{fldNPedJO4jIgRa0j}="${filterCounty}")`;
+// Use field ID in formula since we're using returnFieldsByFieldId=true
+// fldBQ6YMcDuYPJkne = Live checkbox field
+let formula = `{fldBQ6YMcDuYPJkne}=1`;
+if (filterCounty) formula = `AND({fldBQ6YMcDuYPJkne}=1,{fldNPedJO4jIgRa0j}="${filterCounty}")`;
 
-  do {
-    const params = new URLSearchParams({
-      filterByFormula: formula,
-      pageSize: '100',
-      returnFieldsByFieldId: 'true',
-    });
-    if (offset) params.append('offset', offset);
+do {
+const params = new URLSearchParams({
+filterByFormula: formula,
+pageSize: '100',
+returnFieldsByFieldId: 'true',
+});
+if (offset) params.append('offset', offset);
 
-    const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?${params}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
-    if (!res.ok) throw new Error(`Airtable ${res.status}: ${await res.text()}`);
-    const data = await res.json();
-    // Remap cellValuesByFieldId to fields for consistency
-    const remapped = (data.records||[]).map(r => ({ ...r, fields: r.fields || r.cellValuesByFieldId || {} }));
-    records.push(...remapped);
-    offset = data.offset || null;
-  } while (offset);
+const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?${params}`;
+const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
+if (!res.ok) throw new Error(`Airtable ${res.status}: ${await res.text()}`);
+const data = await res.json();
+// Remap cellValuesByFieldId to fields for consistency
+const remapped = (data.records||[]).map(r => ({ ...r, fields: r.fields || r.cellValuesByFieldId || {} }));
+records.push(...remapped);
+offset = data.offset || null;
+} while (offset);
 
-  return records;
+return records;
 }
 
 // ============================================================
 // HTML GENERATOR
 // ============================================================
 function generateHTML(record, allRecords) {
-  const f = record.fields;
-  const name       = (f[F.NAME]||'').trim();
-  const provider   = (f[F.PROVIDER]||'').trim();
-  const tags       = (f[F.TAGS]||'').trim();
-  // BUG 3 FIX: category is a select object {id, name, color} — always extract .name
-  const categoryRaw = f[F.CATEGORY];
-  const category   = categoryRaw && typeof categoryRaw === 'object' ? categoryRaw.name : (categoryRaw||'');
-  const ageMin     = f[F.AGE_MIN]||'';
-  const ageMax     = f[F.AGE_MAX]||'';
-  const days       = (f[F.DAYS]||'').trim();
-  const times      = (f[F.TIMES]||'').trim();
-  const cost       = (f[F.COST]||'').trim();
-  const location   = (f[F.LOCATION]||'').trim();
-  const area       = (f[F.AREA]||'').trim();
-  const county     = (f[F.COUNTY]||'').trim();
-  const bookingUrl = (f[F.BOOKING_URL]||'').trim();
-  const booking    = (f[F.BOOKING]||'').trim();
-  const instagram  = (f[F.INSTAGRAM]||'').trim();
-  const activities = (f[F.ACTIVITIES]||'').trim();
-  const notes      = (f[F.NOTES]||'').trim();
-  // BUG 4 FIX: weeks is an array of select objects {id, name, color} — extract .name from each
-  const weeks = Array.isArray(f[F.WEEKS])
-    ? f[F.WEEKS].map(w => (w && typeof w === 'object') ? w.name : String(w||'')).filter(Boolean)
-    : [];
+const f = record.fields;
+const name = (f[F.NAME]||'').trim();
+const provider = (f[F.PROVIDER]||'').trim();
+const tags = (f[F.TAGS]||'').trim();
+// BUG 3 FIX: category is a select object {id, name, color} — always extract .name
+const categoryRaw = f[F.CATEGORY];
+const category = categoryRaw && typeof categoryRaw === 'object' ? categoryRaw.name : (categoryRaw||'');
+const ageMin = f[F.AGE_MIN]||'';
+const ageMax = f[F.AGE_MAX]||'';
+const days = (f[F.DAYS]||'').trim();
+const times = (f[F.TIMES]||'').trim();
+const cost = (f[F.COST]||'').trim();
+const location = (f[F.LOCATION]||'').trim();
+const area = (f[F.AREA]||'').trim();
+const county = (f[F.COUNTY]||'').trim();
+const bookingUrl = (f[F.BOOKING_URL]||'').trim();
+const booking = (f[F.BOOKING]||'').trim();
+const instagram = (f[F.INSTAGRAM]||'').trim();
+const activities = (f[F.ACTIVITIES]||'').trim();
+const notes = (f[F.NOTES]||'').trim();
+// BUG 4 FIX: weeks is an array of select objects {id, name, color} — extract .name from each
+const weeks = Array.isArray(f[F.WEEKS])
+? f[F.WEEKS].map(w => (w && typeof w === 'object') ? w.name : String(w||'')).filter(Boolean)
+: [];
 
-  const countySlug  = makeCountySlug(county||'ireland');
-  const slug        = makeSlug(provider, name);
-  const pageUrl     = `${BASE_URL}/camps/${countySlug}/${slug}`;
-  const cat         = CATEGORY_CONFIG[category] || CATEGORY_CONFIG['default'];
-  const caveat      = CAVEAT_NOTES[category] || CAVEAT_NOTES['default'];
-  const agesDisplay = ageMin && ageMax ? `${ageMin}–${ageMax} yrs` : ageMin ? `${ageMin}+ yrs` : 'All ages';
-  const costFirst   = cost.split('\n')[0].trim();
-  const costNote    = cost.includes('\n') ? cost.split('\n').slice(1).join('\n').trim() : '';
-  const firstWeek   = weeks[0] || null;
-  const nextStart   = firstWeek ? (WEEK_START_DATES[firstWeek] || firstWeek) : null;
-  const description = activities || notes || `${category} camp in ${area||county}.`;
-  const daysFirst   = days.split('\n')[0].trim();
-  const timesFirst  = times.split('\n')[0].trim();
-  const catSlug     = category.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-  const areaSlug    = (area||'').toLowerCase().replace(/\s+/g,'-');
-  const ageSlug     = ageMin && ageMax ? `${ageMin}-${ageMax}` : '';
-  const igHandle    = instagram ? instagram.replace(/https?:\/\/(www\.)?instagram\.com\//,'').replace(/\/$/,'') : null;
-  const mapsQ       = encodeURIComponent(location.replace(/\n/g,', '));
-  const waText      = encodeURIComponent(`I found this camp on sortd.ie — thought you might be interested! ${pageUrl}`);
-  const emailBody   = encodeURIComponent(`I found this camp on sortd.ie — thought you might be interested!\n${pageUrl}`);
-  const locLines    = location.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>`${esc(l)}<br>`).join('');
-  const sfx         = `. ${category} camp in ${area}, ${county} for ages ${ageMin}–${ageMax}. Find and book on sortd.ie.`;
-  const descClean   = description.replace(/\n/g,' ').trim();
-  const metaDesc    = (descClean.length > 155-sfx.length ? descClean.substring(0,155-sfx.length-1)+'…' : descClean) + sfx;
-  const weeksHtml   = weeks.length
-    ? weeks.map(w=>`<div class="wc"><div class="wc__p">${esc(w)} · ${WEEK_DATES[w]||''}</div><div class="wc__s">${esc(daysFirst)}</div></div>`).join('')
-    : '<p class="mu">Check with the provider for available weeks.</p>';
+const countySlug = makeCountySlug(county||'ireland');
+const slug = makeSlug(provider, name);
+const pageUrl = `${BASE_URL}/camps/${countySlug}/${slug}`;
+const cat = CATEGORY_CONFIG[category] || CATEGORY_CONFIG['default'];
+const caveat = CAVEAT_NOTES[category] || CAVEAT_NOTES['default'];
+const agesDisplay = ageMin && ageMax ? `${ageMin}–${ageMax} yrs` : ageMin ? `${ageMin}+ yrs` : 'All ages';
+const costFirst = cost.split('\n')[0].trim();
+const costNote = cost.includes('\n') ? cost.split('\n').slice(1).join('\n').trim() : '';
+const firstWeek = weeks[0] || null;
+const nextStart = firstWeek ? (WEEK_START_DATES[firstWeek] || firstWeek) : null;
+const description = activities || notes || `${category} camp in ${area||county}.`;
+const daysFirst = days.split('\n')[0].trim();
+const timesFirst = times.split('\n')[0].trim();
+const catSlug = category.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+const areaSlug = (area||'').toLowerCase().replace(/\s+/g,'-');
+const ageSlug = ageMin && ageMax ? `${ageMin}-${ageMax}` : '';
+const igHandle = instagram ? instagram.replace(/https?:\/\/(www\.)?instagram\.com\//,'').replace(/\/$/,'') : null;
+const mapsQ = encodeURIComponent(location.replace(/\n/g,', '));
+const waText = encodeURIComponent(`I found this camp on sortd.ie — thought you might be interested! ${pageUrl}`);
+const emailBody = encodeURIComponent(`I found this camp on sortd.ie — thought you might be interested!\n${pageUrl}`);
+const locLines = location.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>`${esc(l)}<br>`).join('');
+const sfx = `. ${category} camp in ${area}, ${county} for ages ${ageMin}–${ageMax}. Find and book on sortd.ie.`;
+const descClean = description.replace(/\n/g,' ').trim();
+const metaDesc = (descClean.length > 155-sfx.length ? descClean.substring(0,155-sfx.length-1)+'…' : descClean) + sfx;
+const weeksHtml = weeks.length
+? weeks.map(w=>`<div class="wc"><div class="wc__p">${esc(w)} · ${WEEK_DATES[w]||''}</div><div class="wc__s">${esc(daysFirst)}</div></div>`).join('')
+: '<p class="mu">Check with the provider for available weeks.</p>';
 
-  // Safe hostname extraction for booking URL display
-  let bookingHostname = '';
-  if (bookingUrl) {
-    try { bookingHostname = new URL(bookingUrl).hostname.replace(/^www\./,''); }
-    catch { bookingHostname = bookingUrl.replace(/https?:\/\/(www\.)?/,'').split('/')[0]; }
-  }
+// Safe hostname extraction for booking URL display
+let bookingHostname = '';
+if (bookingUrl) {
+try { bookingHostname = new URL(bookingUrl).hostname.replace(/^www\./,''); }
+catch { bookingHostname = bookingUrl.replace(/https?:\/\/(www\.)?/,'').split('/')[0]; }
+}
 
-  // Neurodivergent-friendly badge — driven by the Tags field, so it applies to
-  // ANY camp tagged this way, not just one provider.
-  const isNeurodivergent = /neurodivergent/i.test(tags);
+// Neurodivergent-friendly badge — driven by the Tags field, so it applies to
+// ANY camp tagged this way, not just one provider.
+const isNeurodivergent = /neurodivergent/i.test(tags);
 
-  // Fully-booked / waitlist state — signalled by the provider putting
-  // "FULLY BOOKED" in Notes. Swaps the CTA to a waitlist link instead of
-  // hiding the page, so sold-out camps still rank and still convert waitlist signups.
-  const isFullyBooked = /FULLY BOOKED/i.test(notes);
-  const bookBtnLabel  = isFullyBooked ? 'Join the waitlist ↗' : 'Book this camp ↗';
-  const fullyBookedBanner = isFullyBooked ? `
-      <div class="fb-banner">
-        <div class="fb-banner__t">😔 Fully booked for this summer</div>
-        <p class="fb-banner__p">This camp has sold out, but spaces sometimes open up when families cancel — join the waitlist to be first in line.</p>
-      </div>` : '';
+// Fully-booked / waitlist state — signalled by the provider putting
+// "FULLY BOOKED" in Notes. Swaps the CTA to a waitlist link instead of
+// hiding the page, so sold-out camps still rank and still convert waitlist signups.
+const isFullyBooked = /FULLY BOOKED/i.test(notes);
+const bookBtnLabel = isFullyBooked ? 'Join the waitlist ↗' : 'Book this camp ↗';
+const fullyBookedBanner = isFullyBooked ? `
+<div class="fb-banner">
+<div class="fb-banner__t">😔 Fully booked for this summer</div>
+<p class="fb-banner__p">This camp has sold out, but spaces sometimes open up when families cancel — join the waitlist to be first in line.</p>
+</div>` : '';
 
-  // Sibling camps — other live listings from the same provider, so multi-age-group
-  // or multi-location providers (NDI, Designer Minds, etc.) automatically cross-link
-  // without any manual page-building.
-  const siblings = (allRecords||[])
-    .filter(r => r.id !== record.id)
-    .map(r => {
-      const rf = r.fields;
-      const rName     = (rf[F.NAME]||'').trim();
-      const rProvider = (rf[F.PROVIDER]||'').trim();
-      const rCounty   = (rf[F.COUNTY]||'').trim();
-      if (rProvider !== provider || !rName || !rCounty) return null;
-      const rSlug = makeSlug(rProvider, rName);
-      const rCountySlug = makeCountySlug(rCounty);
-      const rAgeMin = rf[F.AGE_MIN]||'';
-      const rAgeMax = rf[F.AGE_MAX]||'';
-      const rNotes  = (rf[F.NOTES]||'').trim();
-      const rFull   = /FULLY BOOKED/i.test(rNotes);
-      return {
-        name: rName,
-        url: `/camps/${rCountySlug}/${rSlug}`,
-        ages: rAgeMin && rAgeMax ? `${rAgeMin}–${rAgeMax}` : '',
-        full: rFull,
-      };
-    })
-    .filter(Boolean);
+// Sibling camps — other live listings from the same provider, so multi-age-group
+// or multi-location providers (NDI, Designer Minds, etc.) automatically cross-link
+// without any manual page-building.
+const siblings = (allRecords||[])
+.filter(r => r.id !== record.id)
+.map(r => {
+const rf = r.fields;
+const rName = (rf[F.NAME]||'').trim();
+const rProvider = (rf[F.PROVIDER]||'').trim();
+const rCounty = (rf[F.COUNTY]||'').trim();
+if (rProvider !== provider || !rName || !rCounty) return null;
+const rSlug = makeSlug(rProvider, rName);
+const rCountySlug = makeCountySlug(rCounty);
+const rAgeMin = rf[F.AGE_MIN]||'';
+const rAgeMax = rf[F.AGE_MAX]||'';
+const rNotes = (rf[F.NOTES]||'').trim();
+const rFull = /FULLY BOOKED/i.test(rNotes);
+return {
+name: rName,
+url: `/camps/${rCountySlug}/${rSlug}`,
+ages: rAgeMin && rAgeMax ? `${rAgeMin}–${rAgeMax}` : '',
+full: rFull,
+};
+})
+.filter(Boolean);
 
-  const siblingsHtml = siblings.length ? `
-      <div class="sc">
-        <div class="sl">More from ${esc(provider)}</div>
-        <div class="other-camps">
-          ${siblings.map(s => `<a href="${esc(s.url)}" class="camp-link">${esc(s.name)}${s.ages ? ` <span class="mu">(ages ${esc(s.ages)})</span>` : ''} ${s.full ? '<span class="full-tag">Waitlist</span>' : '<span class="avail">Places available ✓</span>'}</a>`).join('')}
-        </div>
-      </div>` : '';
+const siblingsHtml = siblings.length ? `
+<div class="sc">
+<div class="sl">More from ${esc(provider)}</div>
+<div class="other-camps">
+${siblings.map(s => `<a href="${esc(s.url)}" class="camp-link">${esc(s.name)}${s.ages ? ` <span class="mu">(ages ${esc(s.ages)})</span>` : ''} ${s.full ? '<span class="full-tag">Waitlist</span>' : '<span class="avail">Places available ✓</span>'}</a>`).join('')}
+</div>
+</div>` : '';
 
-  return `<!DOCTYPE html>
+return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-HHTB7S9WJG"></script>
 <script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-HHTB7S9WJG');
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-HHTB7S9WJG');
 </script>
 <title>${esc(name)} — ${esc(area)}, ${esc(county)} | sortd</title>
 <meta name="description" content="${esc(metaDesc)}">
@@ -402,132 +402,132 @@ h1{font-family:var(--fd);font-weight:800;font-size:clamp(22px,3.5vw,36px);line-h
 <body>
 
 <nav class="nav">
-  <div class="nav-inner">
-    <a href="/" class="lo">sortd</a>
-    <div class="nav-links">
-      <a href="/how-it-works">how it works</a>
-      <a href="/recommend">recommend a camp</a>
-      <a href="/about">about</a>
-      <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener">instagram</a>
-    </div>
-  </div>
+<div class="nav-inner">
+<a href="/" class="lo">sortd</a>
+<div class="nav-links">
+<a href="/how-it-works">how it works</a>
+<a href="/recommend">recommend a camp</a>
+<a href="/about">about</a>
+<a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener">instagram</a>
+</div>
+</div>
 </nav>
 
 <nav class="bc" aria-label="Breadcrumb">
-  <div class="bc-inner">
-    <a href="/">sortd</a><span class="sep">›</span>
-    <a href="/dublin/northside/camps">Summer camps · ${esc(county)}</a><span class="sep">›</span>
-    <a href="/dublin/northside/camps?area=${areaSlug}">${esc(area)}</a><span class="sep">›</span>
-    <span class="cur">${esc(name)}</span>
-  </div>
+<div class="bc-inner">
+<a href="/">sortd</a><span class="sep">›</span>
+<a href="/dublin/northside/camps">Summer camps · ${esc(county)}</a><span class="sep">›</span>
+<a href="/dublin/northside/camps?area=${areaSlug}">${esc(area)}</a><span class="sep">›</span>
+<span class="cur">${esc(name)}</span>
+</div>
 </nav>
 
 <div class="bn">
-  <div class="bls"><div class="bl bl1"></div><div class="bl bl2"></div><div class="bl bl3"></div></div>
-  <div class="bna">
-    <button class="bnb"><i class="ti ti-heart"></i> Save</button>
-    <button class="bnb"><i class="ti ti-share"></i> Share</button>
-  </div>
-  <div class="pb"><i class="ti ${cat.icon}"></i></div>
+<div class="bls"><div class="bl bl1"></div><div class="bl bl2"></div><div class="bl bl3"></div></div>
+<div class="bna">
+<button class="bnb"><i class="ti ti-heart"></i> Save</button>
+<button class="bnb"><i class="ti ti-share"></i> Share</button>
+</div>
+<div class="pb"><i class="ti ${cat.icon}"></i></div>
 </div>
 
 <div class="page">
-  <div class="layout">
+<div class="layout">
 
-    <!-- MAIN COLUMN -->
-    <div class="main-col">
-      <div class="hd">
-        <div class="hd__c">${esc(category)}</div>
-        ${isNeurodivergent ? `<div class="badge-neuro">🧠 Neurodivergent-Friendly</div>` : ''}
-        <h1>${esc(name.toLowerCase().startsWith(provider.toLowerCase().split(' ')[0].toLowerCase()) ? name : provider + ' — ' + name)}</h1>
-        <div class="hd__p">${esc(provider)}<span class="sb">Sortd Listed</span></div>
-        <div class="fg">
-          <div class="fc"><div class="fc__l"><i class="ti ti-calendar-event"></i> Days</div><div class="fc__v">${esc(daysFirst||'Mon–Fri')}</div></div>
-          <div class="fc"><div class="fc__l"><i class="ti ti-users"></i> Ages</div><div class="fc__v">${esc(agesDisplay)}</div></div>
-          <div class="fc"><div class="fc__l"><i class="ti ti-currency-euro"></i> Cost</div><div class="fc__v">${esc(costFirst||'See provider')}</div></div>
-          <div class="fc"><div class="fc__l"><i class="ti ti-map-pin"></i> Location</div><div class="fc__v">${esc(area)}, ${esc(county)}</div></div>
-        </div>
-        ${fullyBookedBanner}
-        ${nextStart && !isFullyBooked ? `<div class="sd"><div><div class="sd__l">Next start date</div><div class="sd__d">${esc(nextStart)}</div></div><i class="ti ti-calendar-check"></i></div>` : ''}
-        ${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="bb">${bookBtnLabel}</a>` : `<button class="bb" disabled style="opacity:.5;cursor:default">Contact provider to book</button>`}
-        <button class="be" disabled>Send enquiry — coming soon</button>
-      </div>
+<!-- MAIN COLUMN -->
+<div class="main-col">
+<div class="hd">
+<div class="hd__c">${esc(category)}</div>
+${isNeurodivergent ? `<div class="badge-neuro">🧠 Neurodivergent-Friendly</div>` : ''}
+<h1>${esc(name.toLowerCase().startsWith(provider.toLowerCase().split(' ')[0].toLowerCase()) ? name : provider + ' — ' + name)}</h1>
+<div class="hd__p">${esc(provider)}<span class="sb">Sortd Listed</span></div>
+<div class="fg">
+<div class="fc"><div class="fc__l"><i class="ti ti-calendar-event"></i> Days</div><div class="fc__v">${esc(daysFirst||'Mon–Fri')}</div></div>
+<div class="fc"><div class="fc__l"><i class="ti ti-users"></i> Ages</div><div class="fc__v">${esc(agesDisplay)}</div></div>
+<div class="fc"><div class="fc__l"><i class="ti ti-currency-euro"></i> Cost</div><div class="fc__v">${esc(costFirst||'See provider')}</div></div>
+<div class="fc"><div class="fc__l"><i class="ti ti-map-pin"></i> Location</div><div class="fc__v">${esc(area)}, ${esc(county)}</div></div>
+</div>
+${fullyBookedBanner}
+${nextStart && !isFullyBooked ? `<div class="sd"><div><div class="sd__l">Next start date</div><div class="sd__d">${esc(nextStart)}</div></div><i class="ti ti-calendar-check"></i></div>` : ''}
+${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="bb">${bookBtnLabel}</a>` : `<button class="bb" disabled style="opacity:.5;cursor:default">Contact provider to book</button>`}
+<button class="be" disabled>Send enquiry — coming soon</button>
+</div>
 
-      <div class="sc">
-        <div class="sl">About this camp</div>
-        <p class="ab">${esc(description)}</p>
-      </div>
+<div class="sc">
+<div class="sl">About this camp</div>
+<p class="ab">${esc(description)}</p>
+</div>
 
-      <div class="sc">
-        <div class="sl">Weeks available</div>
-        <div class="wcs">${weeksHtml}</div>
-      </div>
+<div class="sc">
+<div class="sl">Weeks available</div>
+<div class="wcs">${weeksHtml}</div>
+</div>
 
-      <div class="sc">
-        <div class="sl">Cost</div>
-        <div class="cp">${esc(costFirst||'—')}</div>
-        <div class="cpe">per child${timesFirst ? ' · '+esc(timesFirst) : ''}</div>
-        ${costNote ? `<div class="cn">${esc(costNote)}</div>` : ''}
-      </div>
+<div class="sc">
+<div class="sl">Cost</div>
+<div class="cp">${esc(costFirst||'—')}</div>
+<div class="cpe">per child${timesFirst ? ' · '+esc(timesFirst) : ''}</div>
+${costNote ? `<div class="cn">${esc(costNote)}</div>` : ''}
+</div>
 
-      <div class="sc">
-        <div class="sl">Location</div>
-        <div class="lr">
-          <div class="lm"><i class="ti ti-map-pin"></i></div>
-          <div>
-            <div class="la2">${locLines || esc(area+', '+county)}</div>
-            <a href="https://maps.google.com/?q=${mapsQ}" target="_blank" rel="noopener" class="ld">Get directions <i class="ti ti-external-link"></i></a>
-          </div>
-        </div>
-      </div>
-      ${siblingsHtml}
-    </div>
+<div class="sc">
+<div class="sl">Location</div>
+<div class="lr">
+<div class="lm"><i class="ti ti-map-pin"></i></div>
+<div>
+<div class="la2">${locLines || esc(area+', '+county)}</div>
+<a href="https://maps.google.com/?q=${mapsQ}" target="_blank" rel="noopener" class="ld">Get directions <i class="ti ti-external-link"></i></a>
+</div>
+</div>
+</div>
+${siblingsHtml}
+</div>
 
-    <!-- SIDEBAR COLUMN -->
-    <div class="sidebar">
-      <div class="bx">
-        <div class="sl" style="color:var(--pk)">How to book</div>
-        ${bookingUrl ? `<div class="br"><div class="br__l">Book online</div><div class="br__v"><i class="ti ti-external-link"></i><a href="${esc(bookingUrl)}" target="_blank" rel="noopener">${esc(bookingHostname)}</a></div></div>` : ''}
-        ${igHandle ? `<div class="br"><div class="br__l">Instagram</div><div class="br__v br__v--ig"><i class="ti ti-brand-instagram"></i><a href="${esc(instagram)}" target="_blank" rel="noopener">@${esc(igHandle)}</a></div></div>` : ''}
-        ${booking ? `<div class="br"><div class="br__l">How to book</div><div class="br__v br__n">${esc(booking)}</div></div>` : ''}
-      </div>
+<!-- SIDEBAR COLUMN -->
+<div class="sidebar">
+<div class="bx">
+<div class="sl" style="color:var(--pk)">How to book</div>
+${bookingUrl ? `<div class="br"><div class="br__l">Book online</div><div class="br__v"><i class="ti ti-external-link"></i><a href="${esc(bookingUrl)}" target="_blank" rel="noopener">${esc(bookingHostname)}</a></div></div>` : ''}
+${igHandle ? `<div class="br"><div class="br__l">Instagram</div><div class="br__v br__v--ig"><i class="ti ti-brand-instagram"></i><a href="${esc(instagram)}" target="_blank" rel="noopener">@${esc(igHandle)}</a></div></div>` : ''}
+${booking ? `<div class="br"><div class="br__l">How to book</div><div class="br__v br__n">${esc(booking)}</div></div>` : ''}
+</div>
 
-      <div class="sc">
-        <div class="sl">Invite a friend</div>
-        <div class="ib">
-          <a href="https://wa.me/?text=${waText}" target="_blank" rel="noopener" class="ibt ibt--w"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>
-          <a href="mailto:?subject=Found%20this%20on%20sortd&body=${emailBody}" class="ibt ibt--e"><i class="ti ti-mail"></i> Email</a>
-        </div>
-      </div>
+<div class="sc">
+<div class="sl">Invite a friend</div>
+<div class="ib">
+<a href="https://wa.me/?text=${waText}" target="_blank" rel="noopener" class="ibt ibt--w"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>
+<a href="mailto:?subject=Found%20this%20on%20sortd&body=${emailBody}" class="ibt ibt--e"><i class="ti ti-mail"></i> Email</a>
+</div>
+</div>
 
-      <div class="sn">${caveat}</div>
+<div class="sn">${caveat}</div>
 
-      <div class="ex">
-        <div class="ex__l">Explore more</div>
-        <div class="ex__ls">
-          <a href="/dublin/northside/camps?cat=${catSlug}" class="ex__a"><i class="ti ti-arrow-right"></i> All ${esc(category)} camps in ${esc(county)}</a>
-          <a href="/dublin/northside/camps?area=${areaSlug}" class="ex__a"><i class="ti ti-arrow-right"></i> All camps in ${esc(area||county)}</a>
-          ${ageSlug ? `<a href="/dublin/northside/camps?ages=${ageSlug}" class="ex__a"><i class="ti ti-arrow-right"></i> Camps for ages ${esc(agesDisplay)}</a>` : ''}
-          <a href="/" class="ex__a"><i class="ti ti-arrow-right"></i> Back to all camps</a>
-        </div>
-      </div>
-    </div>
+<div class="ex">
+<div class="ex__l">Explore more</div>
+<div class="ex__ls">
+<a href="/dublin/northside/camps?cat=${catSlug}" class="ex__a"><i class="ti ti-arrow-right"></i> All ${esc(category)} camps in ${esc(county)}</a>
+<a href="/dublin/northside/camps?area=${areaSlug}" class="ex__a"><i class="ti ti-arrow-right"></i> All camps in ${esc(area||county)}</a>
+${ageSlug ? `<a href="/dublin/northside/camps?ages=${ageSlug}" class="ex__a"><i class="ti ti-arrow-right"></i> Camps for ages ${esc(agesDisplay)}</a>` : ''}
+<a href="/" class="ex__a"><i class="ti ti-arrow-right"></i> Back to all camps</a>
+</div>
+</div>
+</div>
 
-  </div>
+</div>
 </div>
 
 <footer class="footer">
-  <div class="footer-inner">
-    <span class="f-logo">sortd</span>
-    <div class="f-links">
-      <a href="/how-it-works">How it works</a>
-      <a href="/recommend">Recommend a camp</a>
-      <a href="/about">About</a>
-      <a href="/privacy-policy">Privacy Policy</a>
-      <a href="https://providers.sortd.ie">List your camp free</a>
-    </div>
-    <div class="f-bot">© 2026 sortd Ireland · Built by a mum in Malahide</div>
-  </div>
+<div class="footer-inner">
+<span class="f-logo">sortd</span>
+<div class="f-links">
+<a href="/how-it-works">How it works</a>
+<a href="/recommend">Recommend a camp</a>
+<a href="/about">About</a>
+<a href="/privacy-policy">Privacy Policy</a>
+<a href="https://providers.sortd.ie">List your camp free</a>
+</div>
+<div class="f-bot">© 2026 sortd Ireland · Built by a mum in Malahide</div>
+</div>
 </footer>
 
 </body>
@@ -540,162 +540,174 @@ h1{font-family:var(--fd);font-weight:800;font-size:clamp(22px,3.5vw,36px);line-h
 // then deploys the combined result so nothing gets overwritten.
 // ============================================================
 async function getExistingSiteFiles(netlifyToken, siteId) {
-  // Get the current live deploy ID
-  const siteRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
-    headers: { Authorization: `Bearer ${netlifyToken}` }
-  });
-  if (!siteRes.ok) throw new Error(`Get site failed: ${await siteRes.text()}`);
-  const site = await siteRes.json();
-  const deployId = site.published_deploy && site.published_deploy.id;
-  if (!deployId) return {};
+// Get the current live deploy ID
+const siteRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
+headers: { Authorization: `Bearer ${netlifyToken}` }
+});
+if (!siteRes.ok) throw new Error(`Get site failed: ${await siteRes.text()}`);
+const site = await siteRes.json();
+const deployId = site.published_deploy && site.published_deploy.id;
+if (!deployId) return {};
 
-  // Get the file list for that deploy
-  const filesRes = await fetch(`https://api.netlify.com/api/v1/deploys/${deployId}/files`, {
-    headers: { Authorization: `Bearer ${netlifyToken}` }
-  });
-  if (!filesRes.ok) return {};
-  const existingFiles = await filesRes.json();
+// Get the file list for that deploy
+const filesRes = await fetch(`https://api.netlify.com/api/v1/deploys/${deployId}/files`, {
+headers: { Authorization: `Bearer ${netlifyToken}` }
+});
+if (!filesRes.ok) return {};
+const existingFiles = await filesRes.json();
 
-  // Return a map of path -> sha1 (we don't need the content, just the digests)
-  const fileMap = {};
-  for (const f of existingFiles) {
-    if (f.path && f.sha) fileMap[f.path] = f.sha;
-  }
-  return { fileMap, deployId };
+// Return a map of path -> sha1 (we don't need the content, just the digests)
+const fileMap = {};
+for (const f of existingFiles) {
+if (f.path && f.sha) fileMap[f.path] = f.sha;
+}
+return { fileMap, deployId };
 }
 
 async function deployToNetlify(netlifyToken, siteId, newFiles) {
-  // Step 1: get existing file digests from live deploy
-  const { fileMap: existingDigests = {}, deployId: sourceDeployId } = await getExistingSiteFiles(netlifyToken, siteId);
+// Step 1: get existing file digests from live deploy
+const { fileMap: existingDigests = {}, deployId: sourceDeployId } = await getExistingSiteFiles(netlifyToken, siteId);
 
-  // Step 2: compute SHA1 digests for new camp files
-  const newDigests  = {};
-  const sha1ToFile  = {};
+// Step 2: compute SHA1 digests for new camp files
+const newDigests = {};
+const sha1ToFile = {};
 
-  for (const [filePath, content] of Object.entries(newFiles)) {
-    const buf  = Buffer.from(content, 'utf8');
-    const hash = crypto.createHash('sha1').update(buf).digest('hex');
-    newDigests[filePath] = hash;
-    sha1ToFile[hash] = { filePath, buf };
-  }
+for (const [filePath, content] of Object.entries(newFiles)) {
+const buf = Buffer.from(content, 'utf8');
+const hash = crypto.createHash('sha1').update(buf).digest('hex');
+newDigests[filePath] = hash;
+sha1ToFile[hash] = { filePath, buf };
+}
 
-  // Step 3: merge — existing files + new camp files (new ones win on conflict)
-  const mergedDigests = { ...existingDigests, ...newDigests };
+// Step 3: merge — existing files + new camp files (new ones win on conflict)
+const mergedDigests = { ...existingDigests, ...newDigests };
 
-  // Step 4: create the deploy with merged file list
-  const createRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${netlifyToken}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ files: mergedDigests }),
-  });
-  if (!createRes.ok) throw new Error(`Netlify create deploy failed: ${await createRes.text()}`);
-  const deploy = await createRes.json();
+// Step 4: create the deploy with merged file list
+const createRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
+method: 'POST',
+headers: {
+Authorization: `Bearer ${netlifyToken}`,
+'Content-Type': 'application/json',
+},
+body: JSON.stringify({ files: mergedDigests }),
+});
+if (!createRes.ok) throw new Error(`Netlify create deploy failed: ${await createRes.text()}`);
+const deploy = await createRes.json();
 
-  // Step 5: upload only NEW files Netlify says it needs
-  // (existing files are already in Netlify's CDN so it won't ask for them again)
-  const required = deploy.required || [];
-  for (const sha of required) {
-    const file = sha1ToFile[sha];
-    if (!file) continue; // Netlify already has this file from the existing deploy
-    const uploadRes = await fetch(`https://api.netlify.com/api/v1/deploys/${deploy.id}/files${file.filePath}`, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${netlifyToken}`,
-        'Content-Type': 'application/octet-stream',
-      },
-      body: file.buf,
-    });
-    if (!uploadRes.ok) throw new Error(`Upload failed for ${file.filePath}: ${await uploadRes.text()}`);
-  }
+// Step 5: upload only NEW files Netlify says it needs
+// (existing files are already in Netlify's CDN so it won't ask for them again)
+// PERF FIX: uploaded with bounded concurrency instead of one-at-a-time.
+// With 100+ camp pages, sequential uploads could push this function's total
+// runtime past Netlify's ~10s synchronous function limit — when that happened,
+// Netlify killed the function mid-response, and the admin UI was left trying
+// to JSON-parse an empty/truncated body ("Unexpected end of JSON input").
+const required = deploy.required || [];
+const UPLOAD_CONCURRENCY = 10;
+let nextIndex = 0;
+async function uploadNext() {
+while (nextIndex < required.length) {
+const sha = required[nextIndex++];
+const file = sha1ToFile[sha];
+if (!file) continue; // Netlify already has this file from the existing deploy
+const uploadRes = await fetch(`https://api.netlify.com/api/v1/deploys/${deploy.id}/files${file.filePath}`, {
+method: 'PUT',
+headers: {
+Authorization: `Bearer ${netlifyToken}`,
+'Content-Type': 'application/octet-stream',
+},
+body: file.buf,
+});
+if (!uploadRes.ok) throw new Error(`Upload failed for ${file.filePath}: ${await uploadRes.text()}`);
+}
+}
+const workerCount = Math.min(UPLOAD_CONCURRENCY, required.length);
+await Promise.all(Array.from({ length: workerCount }, uploadNext));
 
-  return deploy.id;
+return deploy.id;
 }
 
 // ============================================================
 // HANDLER
 // ============================================================
 exports.handler = async (event) => {
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  const netlifyToken  = process.env.NETLIFY_PERSONAL_TOKEN;
-  const siteId        = process.env.SORTD_SITE_ID;
-  const apiKey        = process.env.AIRTABLE_API_KEY;
+const adminPassword = process.env.ADMIN_PASSWORD;
+const netlifyToken = process.env.NETLIFY_PERSONAL_TOKEN;
+const siteId = process.env.SORTD_SITE_ID;
+const apiKey = process.env.AIRTABLE_API_KEY;
 
-  let body;
-  try { body = JSON.parse(event.body||'{}'); } catch { body = {}; }
+let body;
+try { body = JSON.parse(event.body||'{}'); } catch { body = {}; }
 
-  // Netlify's Scheduled Functions invoke this handler directly with a JSON
-  // body of { next_run }, not via the normal public HTTP endpoint (Netlify
-  // docs: "Scheduled functions cannot be invoked via normal HTTP URLs").
-  // That means this path is only reachable by Netlify's own scheduler, so
-  // it's safe to skip the manual password check for it. Public/manual
-  // requests to this function's URL still require the password below.
-  const isScheduledInvocation = typeof body.next_run === 'string';
+// Netlify's Scheduled Functions invoke this handler directly with a JSON
+// body of { next_run }, not via the normal public HTTP endpoint (Netlify
+// docs: "Scheduled functions cannot be invoked via normal HTTP URLs").
+// That means this path is only reachable by Netlify's own scheduler, so
+// it's safe to skip the manual password check for it. Public/manual
+// requests to this function's URL still require the password below.
+const isScheduledInvocation = typeof body.next_run === 'string';
 
-  if (!isScheduledInvocation && (!adminPassword || body.password !== adminPassword)) {
-    return { statusCode:401, body: JSON.stringify({ error:'Unauthorised' }) };
-  }
-  if (!apiKey)       return { statusCode:500, body: JSON.stringify({ error:'AIRTABLE_API_KEY not set in env vars' }) };
-  if (!netlifyToken) return { statusCode:500, body: JSON.stringify({ error:'NETLIFY_PERSONAL_TOKEN not set in env vars' }) };
-  if (!siteId)       return { statusCode:500, body: JSON.stringify({ error:'SORTD_SITE_ID not set in env vars' }) };
+if (!isScheduledInvocation && (!adminPassword || body.password !== adminPassword)) {
+return { statusCode:401, body: JSON.stringify({ error:'Unauthorised' }) };
+}
+if (!apiKey) return { statusCode:500, body: JSON.stringify({ error:'AIRTABLE_API_KEY not set in env vars' }) };
+if (!netlifyToken) return { statusCode:500, body: JSON.stringify({ error:'NETLIFY_PERSONAL_TOKEN not set in env vars' }) };
+if (!siteId) return { statusCode:500, body: JSON.stringify({ error:'SORTD_SITE_ID not set in env vars' }) };
 
-  try {
-    const startTime = Date.now();
-    const records   = await fetchAllLiveRecords(apiKey, body.county || null);
+try {
+const startTime = Date.now();
+const records = await fetchAllLiveRecords(apiKey, body.county || null);
 
-    const files    = {};
-    const manifest = [];
-    let skipped    = 0;
+const files = {};
+const manifest = [];
+let skipped = 0;
 
-    for (const record of records) {
-      const f        = record.fields;
-      const name     = (f[F.NAME]    ||'').trim();
-      const provider = (f[F.PROVIDER]||'').trim();
-      const county   = (f[F.COUNTY]  ||'').trim();
+for (const record of records) {
+const f = record.fields;
+const name = (f[F.NAME] ||'').trim();
+const provider = (f[F.PROVIDER]||'').trim();
+const county = (f[F.COUNTY] ||'').trim();
 
-      if (!name || !provider || !county) { skipped++; continue; }
+if (!name || !provider || !county) { skipped++; continue; }
 
-      const countySlug = makeCountySlug(county);
-      const slug       = makeSlug(provider, name);
-      const filePath   = `/camps/${countySlug}/${slug}.html`;
-      const pageUrl    = `${BASE_URL}/camps/${countySlug}/${slug}`;
+const countySlug = makeCountySlug(county);
+const slug = makeSlug(provider, name);
+const filePath = `/camps/${countySlug}/${slug}.html`;
+const pageUrl = `${BASE_URL}/camps/${countySlug}/${slug}`;
 
-      files[filePath] = generateHTML(record, records);
-      manifest.push({ slug, county:countySlug, url:pageUrl, name, provider });
-    }
+files[filePath] = generateHTML(record, records);
+manifest.push({ slug, county:countySlug, url:pageUrl, name, provider });
+}
 
-    // Full sitemap: static/hub pages + every live camp page.
-    // Written to the conventional /sitemap.xml path so Search Console
-    // and crawlers find it without any extra configuration.
-    const today = new Date().toISOString().split('T')[0];
-    const staticUrls = STATIC_PAGES.map(p =>
-      `  <url><loc>${BASE_URL}${p.path}</loc><lastmod>${today}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`
-    );
-    const campUrls = manifest.map(m =>
-      `  <url><loc>${m.url}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`
-    );
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...campUrls].join('\n')}\n</urlset>`;
-    files['/sitemap.xml']       = sitemap;
-    files['/manifest.json']     = JSON.stringify(manifest, null, 2);
+// Full sitemap: static/hub pages + every live camp page.
+// Written to the conventional /sitemap.xml path so Search Console
+// and crawlers find it without any extra configuration.
+const today = new Date().toISOString().split('T')[0];
+const staticUrls = STATIC_PAGES.map(p =>
+` <url><loc>${BASE_URL}${p.path}</loc><lastmod>${today}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`
+);
+const campUrls = manifest.map(m =>
+` <url><loc>${m.url}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`
+);
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...campUrls].join('\n')}\n</urlset>`;
+files['/sitemap.xml'] = sitemap;
+files['/manifest.json'] = JSON.stringify(manifest, null, 2);
 
-    await deployToNetlify(netlifyToken, siteId, files);
+await deployToNetlify(netlifyToken, siteId, files);
 
-    const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
+const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
-    return {
-      statusCode: 200,
-      body: JSON.stringify({
-        success:   true,
-        generated: manifest.length,
-        skipped,
-        elapsed:   `${elapsed}s`,
-        pages:     manifest.map(m => m.url.replace(BASE_URL, '')),
-      }),
-    };
+return {
+statusCode: 200,
+body: JSON.stringify({
+success: true,
+generated: manifest.length,
+skipped,
+elapsed: `${elapsed}s`,
+pages: manifest.map(m => m.url.replace(BASE_URL, '')),
+}),
+};
 
-  } catch (err) {
-    return { statusCode:500, body: JSON.stringify({ error: err.message }) };
-  }
+} catch (err) {
+return { statusCode:500, body: JSON.stringify({ error: err.message }) };
+}
 };
