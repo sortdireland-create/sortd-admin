@@ -513,7 +513,7 @@ h1{font-family:var(--fd);font-weight:800;font-size:clamp(22px,3.5vw,36px);line-h
 <div class="nav-links">
 <a href="/how-it-works">how it works</a>
 <a href="/recommend">recommend a camp</a>
-<a href="/about">about</a>
+<a href="/about">about</a><a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener">partners portal</a>
 <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener">instagram</a>
 </div>
 </div>
