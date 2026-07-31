@@ -5,6 +5,112 @@
 const crypto = require('crypto'); // BUG 1 FIX: require once at top, not inside functions
 
 // ============================================================
+// MINIMAL ZIP WRITER (for Netlify Functions deploy — see BUG 5 below)
+// No npm deps are bundled with this function, so this hand-rolls just
+// enough of the ZIP format (a single STORED, i.e. uncompressed, entry)
+// to satisfy Netlify's functions-upload endpoint. Verified against the
+// system `unzip` before shipping — see sortd-admin repo history.
+// ============================================================
+const CRC_TABLE = (() => {
+const table = [];
+for (let n = 0; n < 256; n++) {
+let c = n;
+for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+table[n] = c >>> 0;
+}
+return table;
+})();
+function crc32(buf) {
+let crc = 0xFFFFFFFF;
+for (let i = 0; i < buf.length; i++) crc = CRC_TABLE[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+function buildFunctionZip(entryName, content) {
+const nameBuf = Buffer.from(entryName, 'utf8');
+const crc = crc32(content);
+const size = content.length;
+const dosTime = 0;
+const dosDate = ((2024 - 1980) << 9) | (1 << 5) | 1;
+
+const localHeader = Buffer.alloc(30);
+localHeader.writeUInt32LE(0x04034b50, 0);
+localHeader.writeUInt16LE(20, 4);
+localHeader.writeUInt16LE(0, 6);
+localHeader.writeUInt16LE(0, 8);
+localHeader.writeUInt16LE(dosTime, 10);
+localHeader.writeUInt16LE(dosDate, 12);
+localHeader.writeUInt32LE(crc, 14);
+localHeader.writeUInt32LE(size, 18);
+localHeader.writeUInt32LE(size, 22);
+localHeader.writeUInt16LE(nameBuf.length, 26);
+localHeader.writeUInt16LE(0, 28);
+const localEntry = Buffer.concat([localHeader, nameBuf, content]);
+
+const centralHeader = Buffer.alloc(46);
+centralHeader.writeUInt32LE(0x02014b50, 0);
+centralHeader.writeUInt16LE(20, 4);
+centralHeader.writeUInt16LE(20, 6);
+centralHeader.writeUInt16LE(0, 8);
+centralHeader.writeUInt16LE(0, 10);
+centralHeader.writeUInt16LE(dosTime, 12);
+centralHeader.writeUInt16LE(dosDate, 14);
+centralHeader.writeUInt32LE(crc, 16);
+centralHeader.writeUInt32LE(size, 20);
+centralHeader.writeUInt32LE(size, 24);
+centralHeader.writeUInt16LE(nameBuf.length, 28);
+centralHeader.writeUInt16LE(0, 30);
+centralHeader.writeUInt16LE(0, 32);
+centralHeader.writeUInt16LE(0, 34);
+centralHeader.writeUInt16LE(0, 36);
+centralHeader.writeUInt32LE(0o644 << 16, 38);
+centralHeader.writeUInt32LE(0, 42);
+const centralEntry = Buffer.concat([centralHeader, nameBuf]);
+
+const eocd = Buffer.alloc(22);
+eocd.writeUInt32LE(0x06054b50, 0);
+eocd.writeUInt16LE(0, 4);
+eocd.writeUInt16LE(0, 6);
+eocd.writeUInt16LE(1, 8);
+eocd.writeUInt16LE(1, 10);
+eocd.writeUInt32LE(centralEntry.length, 12);
+eocd.writeUInt32LE(localEntry.length, 16);
+eocd.writeUInt16LE(0, 20);
+
+return Buffer.concat([localEntry, centralEntry, eocd]);
+}
+
+// ============================================================
+// SITE FUNCTIONS (BUG 5 FIX)
+// generate-listings.js publishes sortd-ireland.ie via the raw Deploy API
+// (see deployToNetlify below), NOT a git build. Netlify only bundles a
+// site's Netlify Functions during an actual build — a manifest-based API
+// deploy that omits `functions` silently ships with ZERO functions, even
+// though the previous (git-built) deploy had them. That means every run
+// of this script — including the nightly @daily schedule — was quietly
+// taking down submit-listing, claim-listing and subscribe on the live
+// site until the next git push happened to rebuild it. Fix: fetch the
+// current function source straight from the sortd-site repo on every run
+// and re-deploy it alongside the camp pages, so functions are never
+// dropped. Fetches are NOT best-effort — if any one fails, the whole
+// deploy aborts rather than silently shipping without functions again.
+// ============================================================
+const SITE_FUNCTIONS_REPO = 'https://raw.githubusercontent.com/sortdireland-create/sortd-site/main/netlify/functions';
+const SITE_FUNCTION_NAMES = ['submit-listing', 'claim-listing', 'subscribe'];
+
+async function fetchSiteFunctionSources() {
+const entries = await Promise.all(SITE_FUNCTION_NAMES.map(async (name) => {
+const res = await fetch(`${SITE_FUNCTIONS_REPO}/${name}.js`);
+if (!res.ok) throw new Error(`Fetching ${name}.js from sortd-site repo failed: HTTP ${res.status}`);
+const text = await res.text();
+if (!text || !text.includes('exports.handler')) {
+throw new Error(`Fetched ${name}.js does not look like a valid function (no exports.handler found) — aborting deploy rather than risk shipping a broken function.`);
+}
+return [name, text];
+}));
+return Object.fromEntries(entries);
+}
+
+// ============================================================
 // CONFIG
 // ============================================================
 const AIRTABLE_BASE = 'appuyWkAmTRI4lN5r';
@@ -564,7 +670,7 @@ if (f.path && f.sha) fileMap[f.path] = f.sha;
 return { fileMap, deployId };
 }
 
-async function deployToNetlify(netlifyToken, siteId, newFiles) {
+async function deployToNetlify(netlifyToken, siteId, newFiles, functionSources) {
 // Step 1: get existing file digests from live deploy
 const { fileMap: existingDigests = {}, deployId: sourceDeployId } = await getExistingSiteFiles(netlifyToken, siteId);
 
@@ -582,14 +688,27 @@ sha1ToFile[hash] = { filePath, buf };
 // Step 3: merge — existing files + new camp files (new ones win on conflict)
 const mergedDigests = { ...existingDigests, ...newDigests };
 
-// Step 4: create the deploy with merged file list
+// BUG 5 FIX: functions use a SEPARATE digest map from files, and MUST be
+// hashed with SHA256 (not SHA1) — see docs.netlify.com "file digest method".
+// Each function is zipped (Netlify requires the client to zip it before
+// uploading) and keyed by function name only, no path/extension.
+const functionDigests = {};
+const sha256ToFunction = {};
+for (const [name, source] of Object.entries(functionSources || {})) {
+const zipBuf = buildFunctionZip(`${name}.js`, Buffer.from(source, 'utf8'));
+const hash = crypto.createHash('sha256').update(zipBuf).digest('hex');
+functionDigests[name] = hash;
+sha256ToFunction[hash] = { name, zipBuf };
+}
+
+// Step 4: create the deploy with merged file list + function list
 const createRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
 method: 'POST',
 headers: {
 Authorization: `Bearer ${netlifyToken}`,
 'Content-Type': 'application/json',
 },
-body: JSON.stringify({ files: mergedDigests }),
+body: JSON.stringify({ files: mergedDigests, functions: functionDigests }),
 });
 if (!createRes.ok) throw new Error(`Netlify create deploy failed: ${await createRes.text()}`);
 const deploy = await createRes.json();
@@ -623,7 +742,24 @@ if (!uploadRes.ok) throw new Error(`Upload failed for ${file.filePath}: ${await 
 const workerCount = Math.min(UPLOAD_CONCURRENCY, required.length);
 await Promise.all(Array.from({ length: workerCount }, uploadNext));
 
-return deploy.id;
+// Step 6: upload required functions (almost always all 3 — Netlify never
+// already has them, since every prior API deploy shipped none at all).
+const requiredFunctions = deploy.required_functions || [];
+await Promise.all(requiredFunctions.map(async (sha) => {
+const fn = sha256ToFunction[sha];
+if (!fn) return; // shouldn't happen, but don't fail the whole deploy over it
+const uploadRes = await fetch(`https://api.netlify.com/api/v1/deploys/${deploy.id}/functions/${fn.name}?runtime=js`, {
+method: 'PUT',
+headers: {
+Authorization: `Bearer ${netlifyToken}`,
+'Content-Type': 'application/octet-stream',
+},
+body: fn.zipBuf,
+});
+if (!uploadRes.ok) throw new Error(`Function upload failed for ${fn.name}: ${await uploadRes.text()}`);
+}));
+
+return { deployId: deploy.id, functionsDeployed: Object.keys(functionDigests), functionsRequired: requiredFunctions.length };
 }
 
 // ============================================================
@@ -655,6 +791,12 @@ if (!siteId) return { statusCode:500, body: JSON.stringify({ error:'SORTD_SITE_I
 
 try {
 const startTime = Date.now();
+
+// Fetch current function source FIRST and fail loudly if it doesn't work —
+// see BUG 5 FIX above. Better to skip a camp-page refresh than to silently
+// ship another deploy with no working submit-listing/claim-listing/subscribe.
+const functionSources = await fetchSiteFunctionSources();
+
 const records = await fetchAllLiveRecords(apiKey, body.county || null);
 
 const files = {};
@@ -692,7 +834,7 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://w
 files['/sitemap.xml'] = sitemap;
 files['/manifest.json'] = JSON.stringify(manifest, null, 2);
 
-await deployToNetlify(netlifyToken, siteId, files);
+const deployResult = await deployToNetlify(netlifyToken, siteId, files, functionSources);
 
 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
@@ -704,6 +846,7 @@ generated: manifest.length,
 skipped,
 elapsed: `${elapsed}s`,
 pages: manifest.map(m => m.url.replace(BASE_URL, '')),
+functionsDeployed: deployResult.functionsDeployed,
 }),
 };
 
