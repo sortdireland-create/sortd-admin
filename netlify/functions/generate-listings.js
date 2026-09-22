@@ -289,6 +289,7 @@ const weeks = Array.isArray(f[F.WEEKS])
 const countySlug = makeCountySlug(county||'ireland');
 const slug = makeSlug(provider, name);
 const section = sectionForType(f[F.TYPE]);
+const listingType = section === 'classes' ? 'class' : 'camp';
 const pageUrl = `${BASE_URL}/${section}/${countySlug}/${slug}`;
 const cat = CATEGORY_CONFIG[category] || CATEGORY_CONFIG['default'];
 const caveat = CAVEAT_NOTES[category] || CAVEAT_NOTES['default'];
@@ -393,6 +394,7 @@ function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-HHTB7S9WJG');
 </script>
+<script src="/js/booking-tracking.js" defer></script>
 <title>${esc(name)} — ${esc(area)}, ${esc(county)} | sortd</title>
 <meta name="description" content="${esc(metaDesc)}">
 <link rel="canonical" href="${pageUrl}">
@@ -495,7 +497,7 @@ h1{font-weight:800;font-size:clamp(22px,3.5vw,36px);line-height:1.1;color:var(--
 .lp-sibling-link .lp-full{font-size:.74rem;color:#8a5f0f;font-weight:700;white-space:nowrap;}
 </style>
 </head>
-<body>
+<body data-listing-id="${esc(record.id)}" data-listing-name="${esc(name)}" data-provider="${esc(provider)}" data-listing-type="${listingType}">
 
 <nav>
   <a href="/" class="brand">sortd<span>.</span></a>
@@ -545,7 +547,7 @@ ${isNeurodivergent ? `<div class="lp-badge-neuro">🧠 Neurodivergent-Friendly</
 </div>
 ${fullyBookedBanner}
 ${nextStart && !isFullyBooked ? `<div class="lp-startdate"><div><div class="lp-startdate-l">Next start date</div><div class="lp-startdate-d">${esc(nextStart)}</div></div><i class="ti ti-calendar-check"></i></div>` : ''}
-${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-cta">${bookBtnLabel}</a>` : `<button class="lp-cta" disabled>Contact provider to book</button>`}
+${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-cta bb" data-track="booking">${bookBtnLabel}</a>` : `<button class="lp-cta" disabled>Contact provider to book</button>`}
 <button class="lp-cta-ghost" disabled>Send enquiry — coming soon</button>
 </div>
 
