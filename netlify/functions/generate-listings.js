@@ -1,114 +1,32 @@
 // netlify/functions/generate-listings.js
-// Fetches all live Airtable records, generates HTML for each,
-// then deploys them directly to this Netlify site via the Deploy API.
-
-const crypto = require('crypto'); // BUG 1 FIX: require once at top, not inside functions
-
+// Fetches all live Airtable records, generates HTML for each, and commits
+// the result directly into the sortd-site git repo via GitHub's API.
+//
 // ============================================================
-// MINIMAL ZIP WRITER (for Netlify Functions deploy — see BUG 5 below)
-// No npm deps are bundled with this function, so this hand-rolls just
-// enough of the ZIP format (a single STORED, i.e. uncompressed, entry)
-// to satisfy Netlify's functions-upload endpoint. Verified against the
-// system `unzip` before shipping — see sortd-admin repo history.
+// UNIFICATION (2026-09-22)
+// Previously this function deployed straight to Netlify via the Deploy API,
+// bypassing git entirely (see git history for the old deployToNetlify/
+// zip-writer/site-functions code, removed here). That meant two independent
+// systems were publishing to the same live site: this function (API deploys)
+// and the hand-built pages in sortd-site (git deploys). Any ordinary git
+// push to sortd-site triggered a full git-based rebuild that replaced the
+// live deploy's file manifest with just what's in git — silently wiping
+// every page this function had ever published, since they only ever
+// existed in Netlify's deployed file state, never in git. That caused a
+// real production outage on 2026-09-22.
+//
+// Fix: this function now writes its generated pages straight into the
+// sortd-site git repo (one commit per run, only when something actually
+// changed) instead of deploying separately. There is only one publish path
+// again, so a git push can never wipe this function's output — because
+// this function's output IS git's output now. Netlify Functions (submit-
+// listing.js etc.) are also no longer re-uploaded here: they live in the
+// same repo, so the normal git-triggered build picks them up like anything
+// else. Requires a GITHUB_TOKEN env var (fine-grained PAT scoped to
+// sortdireland-create/sortd-site, Contents: read/write).
 // ============================================================
-const CRC_TABLE = (() => {
-const table = [];
-for (let n = 0; n < 256; n++) {
-let c = n;
-for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-table[n] = c >>> 0;
-}
-return table;
-})();
-function crc32(buf) {
-let crc = 0xFFFFFFFF;
-for (let i = 0; i < buf.length; i++) crc = CRC_TABLE[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
-return (crc ^ 0xFFFFFFFF) >>> 0;
-}
-function buildFunctionZip(entryName, content) {
-const nameBuf = Buffer.from(entryName, 'utf8');
-const crc = crc32(content);
-const size = content.length;
-const dosTime = 0;
-const dosDate = ((2024 - 1980) << 9) | (1 << 5) | 1;
 
-const localHeader = Buffer.alloc(30);
-localHeader.writeUInt32LE(0x04034b50, 0);
-localHeader.writeUInt16LE(20, 4);
-localHeader.writeUInt16LE(0, 6);
-localHeader.writeUInt16LE(0, 8);
-localHeader.writeUInt16LE(dosTime, 10);
-localHeader.writeUInt16LE(dosDate, 12);
-localHeader.writeUInt32LE(crc, 14);
-localHeader.writeUInt32LE(size, 18);
-localHeader.writeUInt32LE(size, 22);
-localHeader.writeUInt16LE(nameBuf.length, 26);
-localHeader.writeUInt16LE(0, 28);
-const localEntry = Buffer.concat([localHeader, nameBuf, content]);
-
-const centralHeader = Buffer.alloc(46);
-centralHeader.writeUInt32LE(0x02014b50, 0);
-centralHeader.writeUInt16LE(20, 4);
-centralHeader.writeUInt16LE(20, 6);
-centralHeader.writeUInt16LE(0, 8);
-centralHeader.writeUInt16LE(0, 10);
-centralHeader.writeUInt16LE(dosTime, 12);
-centralHeader.writeUInt16LE(dosDate, 14);
-centralHeader.writeUInt32LE(crc, 16);
-centralHeader.writeUInt32LE(size, 20);
-centralHeader.writeUInt32LE(size, 24);
-centralHeader.writeUInt16LE(nameBuf.length, 28);
-centralHeader.writeUInt16LE(0, 30);
-centralHeader.writeUInt16LE(0, 32);
-centralHeader.writeUInt16LE(0, 34);
-centralHeader.writeUInt16LE(0, 36);
-centralHeader.writeUInt32LE(0o644 << 16, 38);
-centralHeader.writeUInt32LE(0, 42);
-const centralEntry = Buffer.concat([centralHeader, nameBuf]);
-
-const eocd = Buffer.alloc(22);
-eocd.writeUInt32LE(0x06054b50, 0);
-eocd.writeUInt16LE(0, 4);
-eocd.writeUInt16LE(0, 6);
-eocd.writeUInt16LE(1, 8);
-eocd.writeUInt16LE(1, 10);
-eocd.writeUInt32LE(centralEntry.length, 12);
-eocd.writeUInt32LE(localEntry.length, 16);
-eocd.writeUInt16LE(0, 20);
-
-return Buffer.concat([localEntry, centralEntry, eocd]);
-}
-
-// ============================================================
-// SITE FUNCTIONS (BUG 5 FIX)
-// generate-listings.js publishes sortd-ireland.ie via the raw Deploy API
-// (see deployToNetlify below), NOT a git build. Netlify only bundles a
-// site's Netlify Functions during an actual build — a manifest-based API
-// deploy that omits `functions` silently ships with ZERO functions, even
-// though the previous (git-built) deploy had them. That means every run
-// of this script — including the nightly @daily schedule — was quietly
-// taking down submit-listing, claim-listing and subscribe on the live
-// site until the next git push happened to rebuild it. Fix: fetch the
-// current function source straight from the sortd-site repo on every run
-// and re-deploy it alongside the camp pages, so functions are never
-// dropped. Fetches are NOT best-effort — if any one fails, the whole
-// deploy aborts rather than silently shipping without functions again.
-// ============================================================
-const SITE_FUNCTIONS_REPO = 'https://raw.githubusercontent.com/sortdireland-create/sortd-site/main/netlify/functions';
-const SITE_FUNCTION_NAMES = ['submit-listing', 'claim-listing', 'subscribe'];
-
-async function fetchSiteFunctionSources() {
-const entries = await Promise.all(SITE_FUNCTION_NAMES.map(async (name) => {
-const res = await fetch(`${SITE_FUNCTIONS_REPO}/${name}.js`);
-if (!res.ok) throw new Error(`Fetching ${name}.js from sortd-site repo failed: HTTP ${res.status}`);
-const text = await res.text();
-if (!text || !text.includes('exports.handler')) {
-throw new Error(`Fetched ${name}.js does not look like a valid function (no exports.handler found) — aborting deploy rather than risk shipping a broken function.`);
-}
-return [name, text];
-}));
-return Object.fromEntries(entries);
-}
+const crypto = require('crypto');
 
 // ============================================================
 // CONFIG
@@ -116,6 +34,11 @@ return Object.fromEntries(entries);
 const AIRTABLE_BASE = 'appuyWkAmTRI4lN5r';
 const AIRTABLE_TABLE = 'tblziKRbWXA1veyuz';
 const BASE_URL = 'https://sortd-ireland.ie';
+
+// The single git repo both systems now publish through.
+const GITHUB_OWNER = 'sortdireland-create';
+const GITHUB_REPO = 'sortd-site';
+const GITHUB_BRANCH = 'main';
 
 const F = {
 NAME: 'fldTrzk8wQ8sefLvj',
@@ -213,8 +136,16 @@ const clean = s => s.toLowerCase()
 .trim().replace(/\s+/g,'-').replace(/-+/g,'-');
 const p = clean(provider);
 const n = clean(name);
-// Avoid doubling: if camp name already starts with provider slug, use name only
-return n.startsWith(p) ? n : `${p}-${n}`;
+// SLUG FIX (2026-09-22): dedupe on the provider's FIRST WORD only, not the
+// whole cleaned provider string. The old `n.startsWith(p)` check almost
+// never triggered in practice — "Stretch-n-Grow Halloween Camp – Dundrum"
+// doesn't start with "stretch-n-grow-ireland" — so most slugs ended up
+// doubled, e.g. "stretch-n-grow-ireland-stretch-n-grow-halloween-camp-
+// dundrum". Matching on just the first word ("stretch") catches the same
+// case cleanly and produces "stretch-n-grow-halloween-camp-dundrum",
+// matching the shorter slugs already used elsewhere on the site.
+const pFirstWord = p.split('-')[0];
+return (pFirstWord && n.startsWith(pFirstWord)) ? n : `${p}-${n}`;
 }
 function makeCountySlug(c) { return c.toLowerCase().replace(/\s+/g,'-'); }
 // URL SCHEME FIX (2026-09-22): route by Type so a Weekly Class doesn't get
@@ -654,125 +585,123 @@ ${ageSlug ? `<a href="/dublin/northside/camps?ages=${ageSlug}" class="ex__a"><i 
 }
 
 // ============================================================
-// NETLIFY DEPLOY API
-// Fetches existing site files first, merges camp pages on top,
-// then deploys the combined result so nothing gets overwritten.
+// GITHUB COMMIT (replaces the old Netlify Deploy API path — see
+// UNIFICATION note at top of file)
+//
+// Writes generated pages straight into the sortd-site git repo using
+// GitHub's low-level Git Data API, which lets many files go into a single
+// atomic commit (the Contents API only does one file per commit, which
+// would mean one deploy per file — much noisier and slower). Only files
+// whose content actually changed are included, so a run with nothing new
+// makes no commit and triggers no deploy at all.
 // ============================================================
-async function getExistingSiteFiles(netlifyToken, siteId) {
-// Get the current live deploy ID
-const siteRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}`, {
-headers: { Authorization: `Bearer ${netlifyToken}` }
-});
-if (!siteRes.ok) throw new Error(`Get site failed: ${await siteRes.text()}`);
-const site = await siteRes.json();
-const deployId = site.published_deploy && site.published_deploy.id;
-if (!deployId) return {};
-
-// Get the file list for that deploy
-const filesRes = await fetch(`https://api.netlify.com/api/v1/deploys/${deployId}/files`, {
-headers: { Authorization: `Bearer ${netlifyToken}` }
-});
-if (!filesRes.ok) return {};
-const existingFiles = await filesRes.json();
-
-// Return a map of path -> sha1 (we don't need the content, just the digests)
-const fileMap = {};
-for (const f of existingFiles) {
-if (f.path && f.sha) fileMap[f.path] = f.sha;
-}
-return { fileMap, deployId };
-}
-
-async function deployToNetlify(netlifyToken, siteId, newFiles, functionSources) {
-// Step 1: get existing file digests from live deploy
-const { fileMap: existingDigests = {}, deployId: sourceDeployId } = await getExistingSiteFiles(netlifyToken, siteId);
-
-// Step 2: compute SHA1 digests for new camp files
-const newDigests = {};
-const sha1ToFile = {};
-
-for (const [filePath, content] of Object.entries(newFiles)) {
-const buf = Buffer.from(content, 'utf8');
-const hash = crypto.createHash('sha1').update(buf).digest('hex');
-newDigests[filePath] = hash;
-sha1ToFile[hash] = { filePath, buf };
-}
-
-// Step 3: merge — existing files + new camp files (new ones win on conflict)
-const mergedDigests = { ...existingDigests, ...newDigests };
-
-// BUG 5 FIX: functions use a SEPARATE digest map from files, and MUST be
-// hashed with SHA256 (not SHA1) — see docs.netlify.com "file digest method".
-// Each function is zipped (Netlify requires the client to zip it before
-// uploading) and keyed by function name only, no path/extension.
-const functionDigests = {};
-const sha256ToFunction = {};
-for (const [name, source] of Object.entries(functionSources || {})) {
-const zipBuf = buildFunctionZip(`${name}.js`, Buffer.from(source, 'utf8'));
-const hash = crypto.createHash('sha256').update(zipBuf).digest('hex');
-functionDigests[name] = hash;
-sha256ToFunction[hash] = { name, zipBuf };
-}
-
-// Step 4: create the deploy with merged file list + function list
-const createRes = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/deploys`, {
-method: 'POST',
-headers: {
-Authorization: `Bearer ${netlifyToken}`,
+function githubHeaders(token) {
+return {
+Authorization: `Bearer ${token}`,
+Accept: 'application/vnd.github+json',
 'Content-Type': 'application/json',
-},
-body: JSON.stringify({ files: mergedDigests, functions: functionDigests }),
-});
-if (!createRes.ok) throw new Error(`Netlify create deploy failed: ${await createRes.text()}`);
-const deploy = await createRes.json();
+'X-GitHub-Api-Version': '2022-11-28',
+};
+}
 
-// Step 5: upload only NEW files Netlify says it needs
-// (existing files are already in Netlify's CDN so it won't ask for them again)
-// PERF FIX: uploaded with bounded concurrency instead of one-at-a-time.
-// With 100+ camp pages, sequential uploads could push this function's total
-// runtime past Netlify's ~10s synchronous function limit — when that happened,
-// Netlify killed the function mid-response, and the admin UI was left trying
-// to JSON-parse an empty/truncated body ("Unexpected end of JSON input").
-const required = deploy.required || [];
-const UPLOAD_CONCURRENCY = 10;
+async function githubApi(token, method, path, body) {
+const res = await fetch(`https://api.github.com${path}`, {
+method,
+headers: githubHeaders(token),
+body: body !== undefined ? JSON.stringify(body) : undefined,
+});
+if (!res.ok) {
+const text = await res.text().catch(() => '');
+throw new Error(`GitHub API ${method} ${path} failed: ${res.status} ${text}`);
+}
+return res.json();
+}
+
+// Git's own blob hash: sha1("blob " + byteLength + "\0" + content). Computing
+// this locally lets us compare a freshly-generated file against what's
+// already committed WITHOUT downloading every existing file's content —
+// we just need the tree's recorded sha for that path.
+function gitBlobSha1(content) {
+const buf = Buffer.isBuffer(content) ? content : Buffer.from(content, 'utf8');
+const header = Buffer.from(`blob ${buf.length}\0`, 'utf8');
+return crypto.createHash('sha1').update(Buffer.concat([header, buf])).digest('hex');
+}
+
+// Fetches the full current tree (path -> blob sha) for the branch, plus the
+// commit/tree shas needed to base a new commit on top of it.
+async function getCurrentTree(token) {
+const ref = await githubApi(token, 'GET', `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs/heads/${GITHUB_BRANCH}`);
+const latestCommitSha = ref.object.sha;
+const commit = await githubApi(token, 'GET', `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/commits/${latestCommitSha}`);
+const baseTreeSha = commit.tree.sha;
+const tree = await githubApi(token, 'GET', `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/trees/${baseTreeSha}?recursive=1`);
+if (tree.truncated) {
+// Repo has grown past the recursive-tree size limit — fail loudly rather
+// than silently diffing against an incomplete picture of what exists.
+throw new Error('GitHub tree listing was truncated — repo may be too large for a single recursive fetch. Needs a paginated approach before this can run safely.');
+}
+const pathToSha = {};
+for (const entry of tree.tree) {
+if (entry.type === 'blob') pathToSha[entry.path] = entry.sha;
+}
+return { latestCommitSha, baseTreeSha, pathToSha };
+}
+
+// Commits only the files that actually changed, in one commit. Returns null
+// (no-op, no commit made) if nothing changed.
+async function commitFilesToGitHub(token, newFiles, message) {
+const { latestCommitSha, baseTreeSha, pathToSha } = await getCurrentTree(token);
+
+// GitHub tree paths never start with a leading slash.
+const changed = [];
+for (const [filePath, content] of Object.entries(newFiles)) {
+const repoPath = filePath.replace(/^\//, '');
+const newSha = gitBlobSha1(content);
+if (pathToSha[repoPath] !== newSha) {
+changed.push({ repoPath, content, newSha });
+}
+}
+
+if (changed.length === 0) {
+return null; // nothing to do — no commit, no deploy triggered
+}
+
+// Create a blob for each changed file, bounded concurrency to be kind to
+// GitHub's rate limits when many pages change at once.
+const BLOB_CONCURRENCY = 8;
 let nextIndex = 0;
-async function uploadNext() {
-while (nextIndex < required.length) {
-const sha = required[nextIndex++];
-const file = sha1ToFile[sha];
-if (!file) continue; // Netlify already has this file from the existing deploy
-const uploadRes = await fetch(`https://api.netlify.com/api/v1/deploys/${deploy.id}/files${file.filePath}`, {
-method: 'PUT',
-headers: {
-Authorization: `Bearer ${netlifyToken}`,
-'Content-Type': 'application/octet-stream',
-},
-body: file.buf,
+const treeEntries = [];
+async function createNext() {
+while (nextIndex < changed.length) {
+const item = changed[nextIndex++];
+const blob = await githubApi(token, 'POST', `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/blobs`, {
+content: Buffer.from(item.content, 'utf8').toString('base64'),
+encoding: 'base64',
 });
-if (!uploadRes.ok) throw new Error(`Upload failed for ${file.filePath}: ${await uploadRes.text()}`);
+treeEntries.push({ path: item.repoPath, mode: '100644', type: 'blob', sha: blob.sha });
 }
 }
-const workerCount = Math.min(UPLOAD_CONCURRENCY, required.length);
-await Promise.all(Array.from({ length: workerCount }, uploadNext));
+await Promise.all(Array.from({ length: Math.min(BLOB_CONCURRENCY, changed.length) }, createNext));
 
-// Step 6: upload required functions (almost always all 3 — Netlify never
-// already has them, since every prior API deploy shipped none at all).
-const requiredFunctions = deploy.required_functions || [];
-await Promise.all(requiredFunctions.map(async (sha) => {
-const fn = sha256ToFunction[sha];
-if (!fn) return; // shouldn't happen, but don't fail the whole deploy over it
-const uploadRes = await fetch(`https://api.netlify.com/api/v1/deploys/${deploy.id}/functions/${fn.name}?runtime=js`, {
-method: 'PUT',
-headers: {
-Authorization: `Bearer ${netlifyToken}`,
-'Content-Type': 'application/octet-stream',
-},
-body: fn.zipBuf,
+const newTree = await githubApi(token, 'POST', `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/trees`, {
+base_tree: baseTreeSha,
+tree: treeEntries,
 });
-if (!uploadRes.ok) throw new Error(`Function upload failed for ${fn.name}: ${await uploadRes.text()}`);
-}));
 
-return { deployId: deploy.id, functionsDeployed: Object.keys(functionDigests), functionsRequired: requiredFunctions.length };
+const newCommit = await githubApi(token, 'POST', `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/commits`, {
+message,
+tree: newTree.sha,
+parents: [latestCommitSha],
+});
+
+// Not forced — if the branch moved since we read it (e.g. someone else
+// pushed at the same moment), this fails loudly instead of clobbering
+// whatever landed in between.
+await githubApi(token, 'PATCH', `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/refs/heads/${GITHUB_BRANCH}`, {
+sha: newCommit.sha,
+});
+
+return { commitSha: newCommit.sha, filesChanged: changed.map(c => c.repoPath) };
 }
 
 // ============================================================
@@ -780,8 +709,7 @@ return { deployId: deploy.id, functionsDeployed: Object.keys(functionDigests), f
 // ============================================================
 exports.handler = async (event) => {
 const adminPassword = process.env.ADMIN_PASSWORD;
-const netlifyToken = process.env.NETLIFY_PERSONAL_TOKEN;
-const siteId = process.env.SORTD_SITE_ID;
+const githubToken = process.env.GITHUB_TOKEN;
 const apiKey = process.env.AIRTABLE_API_KEY;
 
 let body;
@@ -799,16 +727,10 @@ if (!isScheduledInvocation && (!adminPassword || body.password !== adminPassword
 return { statusCode:401, body: JSON.stringify({ error:'Unauthorised' }) };
 }
 if (!apiKey) return { statusCode:500, body: JSON.stringify({ error:'AIRTABLE_API_KEY not set in env vars' }) };
-if (!netlifyToken) return { statusCode:500, body: JSON.stringify({ error:'NETLIFY_PERSONAL_TOKEN not set in env vars' }) };
-if (!siteId) return { statusCode:500, body: JSON.stringify({ error:'SORTD_SITE_ID not set in env vars' }) };
+if (!githubToken) return { statusCode:500, body: JSON.stringify({ error:'GITHUB_TOKEN not set in env vars' }) };
 
 try {
 const startTime = Date.now();
-
-// Fetch current function source FIRST and fail loudly if it doesn't work —
-// see BUG 5 FIX above. Better to skip a camp-page refresh than to silently
-// ship another deploy with no working submit-listing/claim-listing/subscribe.
-const functionSources = await fetchSiteFunctionSources();
 
 const records = await fetchAllLiveRecords(apiKey, body.county || null);
 
@@ -834,6 +756,33 @@ files[filePath] = generateHTML(record, records);
 manifest.push({ slug, county:countySlug, url:pageUrl, name, provider, section });
 }
 
+// Diff against what's currently committed BEFORE deciding whether to touch
+// sitemap.xml/manifest.json — those are only worth re-writing (and the
+// dated sitemap only worth bumping) when a real page actually changed, so
+// a day with no content changes makes no commit and triggers no deploy.
+const treeInfo = await getCurrentTree(githubToken);
+const changedPages = Object.entries(files).filter(([filePath, content]) => {
+const repoPath = filePath.replace(/^\//, '');
+return treeInfo.pathToSha[repoPath] !== gitBlobSha1(content);
+});
+
+const elapsedNoChange = () => ((Date.now() - startTime) / 1000).toFixed(1);
+
+if (changedPages.length === 0) {
+return {
+statusCode: 200,
+body: JSON.stringify({
+success: true,
+generated: manifest.length,
+skipped,
+changed: 0,
+elapsed: `${elapsedNoChange()}s`,
+pages: manifest.map(m => m.url.replace(BASE_URL, '')),
+message: 'No page content changed since the last run — nothing committed.',
+}),
+};
+}
+
 // Full sitemap: static/hub pages + every live camp page.
 // Written to the conventional /sitemap.xml path so Search Console
 // and crawlers find it without any extra configuration.
@@ -848,7 +797,10 @@ const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://w
 files['/sitemap.xml'] = sitemap;
 files['/manifest.json'] = JSON.stringify(manifest, null, 2);
 
-const deployResult = await deployToNetlify(netlifyToken, siteId, files, functionSources);
+const changedSlugs = changedPages.map(([filePath]) => filePath).slice(0, 8);
+const commitMessage = `Auto-update ${changedPages.length} listing page(s) via generate-listings\n\n${changedSlugs.join('\n')}${changedPages.length > changedSlugs.length ? `\n…and ${changedPages.length - changedSlugs.length} more` : ''}`;
+
+const commitResult = await commitFilesToGitHub(githubToken, files, commitMessage, treeInfo);
 
 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
@@ -858,9 +810,10 @@ body: JSON.stringify({
 success: true,
 generated: manifest.length,
 skipped,
+changed: commitResult ? commitResult.filesChanged.length : 0,
+commitSha: commitResult ? commitResult.commitSha : null,
 elapsed: `${elapsed}s`,
 pages: manifest.map(m => m.url.replace(BASE_URL, '')),
-functionsDeployed: deployResult.functionsDeployed,
 }),
 };
 

@@ -433,8 +433,12 @@
         (data.pages || []).forEach(p => log(`  ✓ ${p}`, 'ok'));
         if (data.skipped > 0) log(`  ⚠ ${data.skipped} records skipped (missing fields)`, '');
         log('', '');
-        log(`✓ Done in ${data.elapsed} — ${data.generated} pages generated`, 'ok');
-        log('  Sitemap and manifest updated.', 'dim');
+        if (data.changed === 0) {
+          log(`✓ Done in ${data.elapsed} — everything already up to date, nothing committed.`, 'ok');
+        } else {
+          log(`✓ Done in ${data.elapsed} — ${data.generated} pages generated, committed to sortd-site.`, 'ok');
+          log('  Sitemap and manifest updated.', 'dim');
+        }
 
         // Update stats
         const now = new Date().toLocaleTimeString('en-IE', { hour: '2-digit', minute: '2-digit' });
