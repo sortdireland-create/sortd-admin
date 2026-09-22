@@ -126,25 +126,30 @@ const WEEK_START_DATES = {
 'Week 4':'Mon 20 July 2026','Week 5':'Mon 27 July 2026','Week 6':'Mon 3 August 2026',
 'Week 7':'Mon 10 August 2026','Week 8':'Mon 17 August 2026','Week 9':'Mon 24 August 2026',
 };
-const CATEGORY_CONFIG = {
-'Tennis': { icon:'ti-ball-tennis', colour:'#29ABE2' },
-'Football': { icon:'ti-ball-football', colour:'#2BAD7E' },
-'GAA': { icon:'ti-ball-football', colour:'#2BAD7E' },
-'Swimming': { icon:'ti-swimming', colour:'#29ABE2' },
-'Adventure': { icon:'ti-mountain', colour:'#2BAD7E' },
-'Multi-Activity': { icon:'ti-stars', colour:'#29ABE2' },
-'Sport — Multi-activity':{ icon:'ti-stars', colour:'#29ABE2' },
-'Performing arts': { icon:'ti-masks-theater', colour:'#F7A800' },
-'Drama': { icon:'ti-masks-theater', colour:'#F7A800' },
-'Dance': { icon:'ti-music', colour:'#F4A7C3' },
-'Music': { icon:'ti-music', colour:'#F4A7C3' },
-'Arts & Crafts': { icon:'ti-palette', colour:'#F7A800' },
-'STEM / LEGO': { icon:'ti-building-factory', colour:'#29ABE2' },
-'STEM': { icon:'ti-circuit-board', colour:'#29ABE2' },
-'Nature': { icon:'ti-tree', colour:'#2BAD7E' },
-'Language': { icon:'ti-language', colour:'#29ABE2' },
-'default': { icon:'ti-star', colour:'#29ABE2' },
-};
+// Colour + icon per category — ported from js/search.js's categoryStyle()
+// so a listing page always shows the SAME accent colour the listing card
+// already showed the family on /camps or /weekly-classes. Each accent has a
+// matching pale tint (same pairs as js/search.js's COLS array) used for the
+// page's hero background, so the accent always sits on its own tint, never
+// a mismatched one — matches the brand rule that every accent has one paired
+// tint. These are the actual site.css tokens (--sk/--gr/--pu/--pkink), not
+// the old bespoke palette this file used to hardcode.
+function categoryStyle(cat) {
+const c = (cat||'').toLowerCase();
+if (c.includes('tennis')) return { icon:'ti-ball-tennis', colour:'#3D77A3', tint:'#CFE8F6' };
+if (c.includes('football') || c.includes('gaa')) return { icon:'ti-ball-football', colour:'#1D8A52', tint:'#C9F0DA' };
+if (c.includes('adventure') || c.includes('outdoor')) return { icon:'ti-mountain', colour:'#1D8A52', tint:'#C9F0DA' };
+if (c.includes('drama') || c.includes('performing')) return { icon:'ti-masks-theater', colour:'#5B4FCA', tint:'#E7E1F8' };
+if (c.includes('dance') || c.includes('music')) return { icon:'ti-music', colour:'#C6567F', tint:'#FBE1EB' };
+if (c.includes('art')) return { icon:'ti-palette', colour:'#5B4FCA', tint:'#E7E1F8' };
+if (c.includes('stem') || c.includes('coding') || c.includes('lego') || c.includes('science')) return { icon:'ti-circuit-board', colour:'#3D77A3', tint:'#CFE8F6' };
+if (c.includes('language')) return { icon:'ti-language', colour:'#1D8A52', tint:'#C9F0DA' };
+if (c.includes('additional needs')) return { icon:'ti-heart', colour:'#5B4FCA', tint:'#E7E1F8' };
+if (c.includes('academic')) return { icon:'ti-book', colour:'#3D77A3', tint:'#CFE8F6' };
+if (c.includes('multi') || c.includes('sport')) return { icon:'ti-stars', colour:'#3D77A3', tint:'#CFE8F6' };
+return { icon:'ti-star', colour:'#3D77A3', tint:'#CFE8F6' };
+}
+const CATEGORY_CONFIG = new Proxy({}, { get: (_, cat) => categoryStyle(String(cat)) });
 // Static / hub pages not driven by Airtable records.
 // Add new hub/category/county pages here as they go live.
 const STATIC_PAGES = [
@@ -367,6 +372,15 @@ ${siblings.map(s => `<a href="${esc(s.url)}" class="camp-link">${esc(s.name)}${s
 </div>
 </div>` : '';
 
+// Hub page (the /camps or /weekly-classes search page) this listing belongs
+// under, and a best-effort age bucket matching the hero search filter's own
+// buckets — both used by the breadcrumb and "explore more" links below so
+// they push into the SAME search UI real visitors use, with the same query
+// params search.js already reads (q, age, text), instead of the old
+// hardcoded /dublin/northside/camps path that didn't exist as a real route.
+const hubPath = section === 'classes' ? '/weekly-classes' : '/camps';
+const ageKey = ageMin === '' ? '' : ageMin <= 2 ? '0-2' : ageMin <= 5 ? '3-5' : ageMin <= 8 ? '6-8' : ageMin <= 12 ? '9-12' : '13-99';
+
 return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -391,195 +405,174 @@ gtag('config', 'G-HHTB7S9WJG');
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@400;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<!-- Shared site stylesheet — same nav/hero/footer/tokens as the homepage,
+     /camps and /weekly-classes, so a listing page is never its own island. -->
+<link rel="stylesheet" href="/css/site.css">
 <style>
-:root{--cr:#F5F0E8;--cd:#FBF8F0;--nv:#27314A;--sk:#29ABE2;--pk:#F4A7C3;--rd:#EF3D2F;--su:#F7A800;--gr:#2BAD7E;--bd:#EDE7D8;--bt:#444;--mu:#888;--la:#aaa;--fd:'Baloo 2',sans-serif;--fb:'Nunito',sans-serif;--fs:'Caveat',cursive;--bc:${cat.colour}}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--fb);background:var(--cr);color:var(--bt);min-height:100vh}
-a{text-decoration:none;color:inherit;}
+/* ── Listing-page-only rules. Everything else (nav, footer, popup, colour
+   tokens, fonts) comes from /css/site.css so this page always stays in sync
+   with the rest of the site instead of drifting on its own. Classes below
+   are prefixed lp- so they can never collide with a site.css class. ── */
 
-/* ── NAV — matches homepage exactly ── */
-.nav{background:#fff;border-bottom:1.5px solid #eee;position:sticky;top:0;z-index:200;}
-.nav-inner{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:16px 40px;}
-.nav .lo{font-family:var(--fd);font-weight:800;font-size:28px;color:var(--nv);letter-spacing:-0.03em;}
-.nav-links{display:flex;align-items:center;gap:24px;font-weight:700;font-size:14px;}
-.nav-links a{color:var(--nv);opacity:0.6;transition:opacity 0.15s;}
-.nav-links a:hover{opacity:1;}
-@media(max-width:768px){.nav-links{display:none;}.nav-inner{padding:14px 20px;}}
+/* Breadcrumb */
+.lp-bc{background:#fff;padding:11px 40px;border-bottom:1px solid var(--bd);font-size:12px;font-weight:700;color:#9aa0ad;}
+.lp-bc-inner{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.lp-bc a{color:#9aa0ad;}.lp-bc a:hover{color:var(--nv);}.lp-sep{opacity:.5;}.lp-cur{color:var(--nv);}
+@media(max-width:768px){.lp-bc{padding:10px 20px;}}
 
-/* ── BREADCRUMB ── */
-.bc{background:#fff;padding:11px 40px;border-bottom:1px solid #f0f0f0;font-size:12px;font-weight:700;color:#bbb;}
-.bc-inner{max-width:1200px;margin:0 auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
-.bc a{color:#bbb;}.bc a:hover{color:var(--nv);}.sep{opacity:0.4;}.cur{color:var(--nv);}
-@media(max-width:768px){.bc{padding:10px 20px;}}
+/* Page wrapper + two-column layout */
+.lp-page{max-width:1200px;margin:0 auto;padding:0 40px 64px;}
+.lp-layout{display:grid;grid-template-columns:1fr 360px;gap:32px;align-items:start;}
+@media(max-width:900px){.lp-layout{grid-template-columns:1fr;}}
+@media(max-width:768px){.lp-page{padding:0 20px 48px;}}
 
-/* ── PAGE WRAPPER ── */
-.page{max-width:1200px;margin:0 auto;padding:40px 40px 64px;}
-@media(max-width:768px){.page{padding:24px 20px 48px;}}
+/* Hero — same rotated rounded-card blobs as the homepage hero, tinted to
+   this listing's category rather than the fixed purple/green/pink the
+   homepage and hub pages use, so each listing still reads as itself. */
+.lp-hero{position:relative;overflow:hidden;background:${cat.tint};padding:56px 40px 68px;}
+.lp-hero .blob1{background:#fff;}
+.lp-hero .blob2{background:rgba(255,255,255,.6);}
+.lp-hero .blob3{background:${cat.colour};opacity:.3;}
+.lp-pin{position:absolute;bottom:-24px;left:40px;width:56px;height:56px;background:#fff;border-radius:16px;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 4px 16px rgba(30,42,68,.16);}
+.lp-pin .ti{font-size:26px;color:${cat.colour};}
+@media(max-width:768px){.lp-hero{padding:40px 20px 52px;}.lp-pin{left:20px;}}
 
-/* ── TWO-COLUMN DESKTOP LAYOUT ── */
-.layout{display:grid;grid-template-columns:1fr 360px;gap:32px;align-items:start;}
-@media(max-width:900px){.layout{grid-template-columns:1fr;}}
+/* Main column cards */
+.lp-hd{background:#fff;border:1px solid var(--bd);border-radius:20px;padding:44px 28px 28px;margin-bottom:16px;box-shadow:0 4px 16px rgba(30,42,68,.06);}
+.lp-eyebrow{font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:${cat.colour};margin-bottom:8px;}
+h1{font-weight:800;font-size:clamp(22px,3.5vw,36px);line-height:1.1;color:var(--nv);margin-bottom:8px;}
+.lp-provider-row{font-size:14px;color:#767c8c;display:flex;align-items:center;gap:8px;margin-bottom:20px;}
+.lp-badge{background:var(--nv);color:#fff;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:999px;}
+.lp-facts{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--bd);border-radius:14px;overflow:hidden;margin-bottom:16px;}
+.lp-fact{padding:12px 16px;border-right:1.5px solid var(--bd);border-bottom:1.5px solid var(--bd);}
+.lp-fact:nth-child(2n){border-right:none;}.lp-fact:nth-child(3),.lp-fact:nth-child(4){border-bottom:none;}
+.lp-fact-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#aaa;display:flex;align-items:center;gap:4px;margin-bottom:4px;}
+.lp-fact-l .ti{color:${cat.colour};font-size:12px;}
+.lp-fact-v{font-size:13px;font-weight:700;color:var(--nv);line-height:1.35;}
+.lp-startdate{background:${cat.tint};border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.lp-startdate-l{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--nv);opacity:.7;margin-bottom:2px;}
+.lp-startdate-d{font-weight:800;font-size:18px;color:var(--nv);}
+.lp-startdate .ti{font-size:26px;color:var(--nv);opacity:.5;}
+.lp-cta{display:block;width:100%;background:${cat.colour};color:#fff;border:none;border-radius:999px;padding:15px;font-weight:700;font-size:15px;text-align:center;text-decoration:none;cursor:pointer;margin-bottom:10px;transition:opacity .15s;}
+.lp-cta:hover{opacity:.88;}
+.lp-cta[disabled]{opacity:.5;cursor:default;}
+.lp-cta-ghost{display:block;width:100%;background:transparent;color:var(--nv);border:1.5px solid var(--bd);border-radius:999px;padding:12px;font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;text-align:center;cursor:not-allowed;opacity:.5;}
+.lp-card{background:#fff;border:1px solid var(--bd);border-radius:20px;padding:24px 28px;margin-bottom:16px;}
+.lp-card-l{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:${cat.colour};margin-bottom:12px;}
+.lp-about{font-size:15px;line-height:1.7;color:#3f4557;white-space:pre-line;}
+.lp-weeks{display:flex;flex-direction:column;gap:8px;}
+.lp-week{background:var(--pg);border:1px solid var(--bd);border-radius:10px;padding:9px 14px;}
+.lp-week-p{font-size:13px;font-weight:700;color:var(--nv);}.lp-week-s{font-size:11px;color:#888;margin-top:2px;}
+.lp-cost{font-weight:800;font-size:32px;color:var(--nv);line-height:1;}
+.lp-cost-note{font-size:13px;color:#888;margin-top:4px;margin-bottom:14px;}
+.lp-cost-extra{background:var(--pg);border-radius:10px;padding:12px 14px;font-size:13px;color:#3f4557;line-height:1.55;white-space:pre-line;}
+.lp-loc{display:flex;gap:14px;align-items:flex-start;}
+.lp-loc-icon{width:90px;min-width:90px;height:72px;background:var(--grl);border-radius:14px;display:flex;align-items:center;justify-content:center;color:var(--gr);font-size:28px;}
+.lp-loc-text{font-size:14px;color:#3f4557;line-height:1.55;margin-bottom:8px;}
+.lp-loc-link{color:var(--sk);font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px;}
 
-/* ── BANNER ── */
-.bn{position:relative;height:200px;background:var(--bc);overflow:hidden;border-radius:0;}
-.bls{position:absolute;inset:0;overflow:hidden;}
-.bl{position:absolute;border-radius:50%;opacity:.28;}
-.bl1{width:200px;height:200px;background:var(--pk);top:-60px;left:-40px;}
-.bl2{width:140px;height:140px;background:var(--su);bottom:-40px;right:80px;}
-.bl3{width:120px;height:120px;background:var(--gr);top:20px;right:-20px;}
-.bna{position:absolute;top:16px;right:16px;display:flex;gap:8px;z-index:2;}
-.bnb{background:rgba(255,255,255,.9);border:none;border-radius:20px;padding:7px 14px;font-family:var(--fb);font-size:12px;font-weight:700;color:var(--nv);cursor:pointer;display:flex;align-items:center;gap:5px;}
-.pb{position:absolute;bottom:-24px;left:40px;width:56px;height:56px;background:var(--cd);border:3px solid var(--cr);border-radius:16px;display:flex;align-items:center;justify-content:center;z-index:10;box-shadow:0 2px 12px rgba(39,49,74,.14);}
-.pb .ti{font-size:26px;color:var(--bc);}
-@media(max-width:768px){.bn{height:140px;}.pb{left:20px;width:48px;height:48px;}.pb .ti{font-size:22px;}}
+/* Sidebar column */
+.lp-box{background:var(--nv);border-radius:20px;padding:20px 22px;display:flex;flex-direction:column;margin-bottom:16px;}
+.lp-box-row{padding:11px 0;border-bottom:1px solid rgba(255,255,255,.1);}.lp-box-row:last-child{border-bottom:none;}
+.lp-box-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.5);margin-bottom:4px;}
+.lp-box-v{font-size:14px;font-weight:600;color:#fff;display:flex;align-items:center;gap:6px;}
+.lp-box-v a{color:#fff;text-decoration:underline;text-underline-offset:2px;}
+.lp-box-v--ig{color:#F4A7C3;}.lp-box-n{font-weight:400;color:rgba(255,255,255,.75);font-size:13px;line-height:1.5;}
+.lp-invite{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.lp-invite-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:13px;border-radius:12px;font-size:13px;font-weight:700;text-decoration:none;border:none;cursor:pointer;font-family:'Nunito',sans-serif;}
+.lp-invite-btn--wa{background:#25D366;color:#fff;}.lp-invite-btn--em{background:var(--pg);color:var(--nv);}
+.lp-explore{background:#fff;border:1px solid var(--bd);border-radius:20px;padding:20px 22px;}
+.lp-explore-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:#aaa;margin-bottom:12px;}
+.lp-explore-ls{display:flex;flex-direction:column;gap:10px;}
+.lp-explore-a{color:var(--sk);font-size:14px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:5px;}
 
-/* ── MAIN CONTENT COLUMN ── */
-.hd{background:var(--cd);border-radius:16px;padding:44px 28px 28px;margin-bottom:16px;}
-.hd__c{font-size:10px;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:var(--rd);margin-bottom:8px;}
-h1{font-family:var(--fd);font-weight:800;font-size:clamp(22px,3.5vw,36px);line-height:1.1;color:var(--nv);margin-bottom:8px;}
-.hd__p{font-size:14px;color:var(--mu);display:flex;align-items:center;gap:8px;margin-bottom:20px;}
-.sb{background:var(--sk);color:#fff;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 8px;border-radius:4px;}
-.fg{display:grid;grid-template-columns:1fr 1fr;border:1.5px solid var(--bd);border-radius:12px;overflow:hidden;margin-bottom:16px;}
-.fc{padding:12px 16px;border-right:1.5px solid var(--bd);border-bottom:1.5px solid var(--bd);}
-.fc:nth-child(2n){border-right:none;}.fc:nth-child(3),.fc:nth-child(4){border-bottom:none;}
-.fc__l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--la);display:flex;align-items:center;gap:4px;margin-bottom:4px;}
-.fc__l .ti{color:var(--rd);font-size:12px;}.fc__v{font-size:13px;font-weight:700;color:var(--nv);line-height:1.35;}
-.sd{background:var(--pk);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
-.sd__l{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--nv);opacity:.7;margin-bottom:2px;}
-.sd__d{font-family:var(--fd);font-weight:800;font-size:18px;color:var(--nv);}
-.sd .ti{font-size:26px;color:var(--nv);opacity:.5;}
-.bb{display:block;width:100%;background:var(--rd);color:#fff;border:none;border-radius:30px;padding:14px;font-family:var(--fd);font-size:15px;font-weight:700;text-align:center;text-decoration:none;cursor:pointer;margin-bottom:10px;transition:opacity .15s;}
-.bb:hover{opacity:.88;}
-.be{display:block;width:100%;background:transparent;color:var(--nv);border:1.5px solid var(--bd);border-radius:30px;padding:12px;font-family:var(--fb);font-size:13px;font-weight:700;text-align:center;cursor:not-allowed;opacity:.5;}
-.sc{background:var(--cd);border-radius:16px;padding:24px 28px;margin-bottom:16px;}
-.sl{font-family:var(--fd);font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--rd);margin-bottom:12px;}
-.ab{font-size:15px;line-height:1.7;color:var(--bt);white-space:pre-line;}
-.mu2{font-size:13px;color:var(--mu);}
-.wcs{display:flex;flex-direction:column;gap:8px;}
-.wc{background:var(--cr);border:1px solid var(--bd);border-radius:8px;padding:9px 14px;}
-.wc__p{font-size:13px;font-weight:700;color:var(--nv);}.wc__s{font-size:11px;color:var(--mu);margin-top:2px;}
-.cp{font-family:var(--fd);font-weight:800;font-size:32px;color:var(--nv);line-height:1;}
-.cpe{font-size:13px;color:var(--mu);margin-top:4px;margin-bottom:14px;}
-.cn{background:var(--cr);border-radius:7px;padding:12px 14px;font-size:13px;color:var(--bt);line-height:1.55;white-space:pre-line;}
-.lr{display:flex;gap:14px;align-items:flex-start;}
-.lm{width:90px;min-width:90px;height:72px;background:#D2F2E2;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--gr);font-size:28px;}
-.la2{font-size:14px;color:var(--bt);line-height:1.55;margin-bottom:8px;}
-.ld{color:var(--sk);font-size:13px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:4px;}
-
-/* ── SIDEBAR COLUMN ── */
-.sidebar{}
-.bx{background:var(--nv);border-radius:16px;padding:20px 22px;display:flex;flex-direction:column;margin-bottom:16px;}
-.br{padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08);}.br:last-child{border-bottom:none;}
-.br__l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.45);margin-bottom:4px;}
-.br__v{font-size:14px;font-weight:600;color:#fff;display:flex;align-items:center;gap:6px;}
-.br__v a{color:#fff;text-decoration:underline;text-underline-offset:2px;}
-.br__v--ig{color:var(--pk);}.br__n{font-weight:400;color:rgba(255,255,255,.7);font-size:13px;line-height:1.5;}
-.ib{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.ibt{display:flex;align-items:center;justify-content:center;gap:6px;padding:13px;border-radius:10px;font-size:13px;font-weight:700;text-decoration:none;border:none;cursor:pointer;font-family:var(--fb);}
-.ibt--w{background:#25D366;color:#fff;}.ibt--e{background:var(--cr);color:var(--nv);}
-.sn{background:var(--cd);border-radius:16px;padding:20px 22px;text-align:center;font-family:var(--fs);font-size:20px;font-weight:600;color:var(--gr);margin-bottom:16px;}
-.ex{background:var(--cd);border-radius:16px;padding:20px 22px;}
-.ex__l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--la);margin-bottom:12px;}
-.ex__ls{display:flex;flex-direction:column;gap:10px;}
-.ex__a{color:var(--sk);font-size:14px;font-weight:600;text-decoration:none;display:flex;align-items:center;gap:5px;}
-
-/* ── FOOTER — matches homepage exactly ── */
-.footer{background:var(--nv);padding:40px 40px 24px;}
-.footer-inner{max-width:1200px;margin:0 auto;}
-.f-logo{font-family:var(--fd);font-weight:800;font-size:22px;color:var(--pk);display:block;margin-bottom:6px;}
-.f-links{display:flex;gap:24px;margin-bottom:24px;flex-wrap:wrap;}
-.f-links a{font-size:13px;font-weight:600;color:rgba(255,255,255,.5);transition:color .15s;}
-.f-links a:hover{color:#fff;}
-.f-bot{border-top:1px solid rgba(255,255,255,.1);padding-top:16px;font-size:11px;color:rgba(255,255,255,.3);}
-@media(max-width:768px){.footer{padding:32px 20px 20px;}}
-.badge-neuro{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:.78rem;font-weight:700;background:#F3E8FF;color:#7C3AED;border:1.5px solid #7C3AED;margin-bottom:10px;}
-.fb-banner{background:#FEF2F2;border:2px solid #DC2626;border-radius:16px;padding:20px 24px;margin-bottom:24px;}
-.fb-banner__t{font-family:var(--fd);font-size:1.15rem;font-weight:800;color:#DC2626;margin-bottom:6px;}
-.fb-banner__p{font-size:.92rem;color:#7F1D1D;line-height:1.6;margin:0;}
-.other-camps{display:flex;flex-direction:column;gap:10px;margin-top:8px;}
-.camp-link{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;background:var(--cr);border-radius:12px;text-decoration:none;color:#1a1a2e;font-weight:600;font-size:.88rem;}
-.camp-link .avail{font-size:.74rem;color:#2BAD7E;font-weight:700;white-space:nowrap;}
-.camp-link .full-tag{font-size:.74rem;color:#DC2626;font-weight:700;white-space:nowrap;}
+.lp-badge-neuro{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:999px;font-size:.78rem;font-weight:700;background:var(--pul);color:var(--pu);border:1.5px solid var(--pu);margin-bottom:10px;}
+.lp-fb-banner{background:#FFF7E8;border:2px solid #D9971E;border-radius:16px;padding:20px 24px;margin-bottom:24px;}
+.lp-fb-banner-t{font-size:1.15rem;font-weight:800;color:#8a5f0f;margin-bottom:6px;}
+.lp-fb-banner-p{font-size:.92rem;color:#6b4a0c;line-height:1.6;margin:0;}
+.lp-sibling-link{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;background:var(--pg);border-radius:12px;text-decoration:none;color:var(--nv);font-weight:600;font-size:.88rem;margin-top:10px;}
+.lp-sibling-link .lp-avail{font-size:.74rem;color:var(--gr);font-weight:700;white-space:nowrap;}
+.lp-sibling-link .lp-full{font-size:.74rem;color:#8a5f0f;font-weight:700;white-space:nowrap;}
 </style>
 </head>
 <body>
 
-<nav class="nav">
-<div class="nav-inner">
-<a href="/" class="lo">sortd</a>
-<div class="nav-links">
-<a href="/how-it-works">how it works</a>
-<a href="/recommend">recommend a camp</a>
-<a href="/about">about</a><a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener">partners portal</a>
-<a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener">instagram</a>
-</div>
+<nav>
+  <a href="/" class="brand">sortd<span>.</span></a>
+  <div class="navlinks">
+    <a href="/camps" class="navlink${section!=='classes'?' active':''}">Camps</a>
+    <a href="/weekly-classes" class="navlink${section==='classes'?' active':''}">Weekly classes</a>
+    <a href="/how-it-works" class="navlink">How it works</a>
+    <a href="/about" class="navlink">Our story</a>
+    <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener" class="navlink">Partners portal</a>
+  </div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener"><i class="ti ti-brand-instagram nav-icon"></i></a>
+    <a href="/list" class="nav-cta-outline">Add a class</a>
+    <button class="nav-cta" onclick="openPopup()">Follow us</button>
+  </div>
+</nav>
+
+<nav class="lp-bc" aria-label="Breadcrumb">
+<div class="lp-bc-inner">
+<a href="/">sortd</a><span class="lp-sep">›</span>
+<a href="${hubPath}?q=${encodeURIComponent(county)}">${esc(category)} · ${esc(county)}</a><span class="lp-sep">›</span>
+<a href="${hubPath}?q=${encodeURIComponent(area)}">${esc(area)}</a><span class="lp-sep">›</span>
+<span class="lp-cur">${esc(name)}</span>
 </div>
 </nav>
 
-<nav class="bc" aria-label="Breadcrumb">
-<div class="bc-inner">
-<a href="/">sortd</a><span class="sep">›</span>
-<a href="/dublin/northside/camps">Summer camps · ${esc(county)}</a><span class="sep">›</span>
-<a href="/dublin/northside/camps?area=${areaSlug}">${esc(area)}</a><span class="sep">›</span>
-<span class="cur">${esc(name)}</span>
-</div>
-</nav>
-
-<div class="bn">
-<div class="bls"><div class="bl bl1"></div><div class="bl bl2"></div><div class="bl bl3"></div></div>
-<div class="bna">
-<button class="bnb"><i class="ti ti-heart"></i> Save</button>
-<button class="bnb"><i class="ti ti-share"></i> Share</button>
-</div>
-<div class="pb"><i class="ti ${cat.icon}"></i></div>
+<div class="hero lp-hero">
+<div class="blob blob1"></div><div class="blob blob2"></div><div class="blob blob3"></div>
+<div class="lp-pin"><i class="ti ${cat.icon}"></i></div>
 </div>
 
-<div class="page">
-<div class="layout">
+<div class="lp-page">
+<div class="lp-layout">
 
 <!-- MAIN COLUMN -->
 <div class="main-col">
-<div class="hd">
-<div class="hd__c">${esc(category)}</div>
-${isNeurodivergent ? `<div class="badge-neuro">🧠 Neurodivergent-Friendly</div>` : ''}
+<div class="lp-hd">
+<div class="lp-eyebrow">${esc(category)}</div>
+${isNeurodivergent ? `<div class="lp-badge-neuro">🧠 Neurodivergent-Friendly</div>` : ''}
 <h1>${esc(name.toLowerCase().startsWith(provider.toLowerCase().split(' ')[0].toLowerCase()) ? name : provider + ' — ' + name)}</h1>
-<div class="hd__p">${esc(provider)}<span class="sb">Sortd Listed</span></div>
-<div class="fg">
-<div class="fc"><div class="fc__l"><i class="ti ti-calendar-event"></i> Days</div><div class="fc__v">${esc(daysFirst||'Mon–Fri')}</div></div>
-<div class="fc"><div class="fc__l"><i class="ti ti-users"></i> Ages</div><div class="fc__v">${esc(agesDisplay)}</div></div>
-<div class="fc"><div class="fc__l"><i class="ti ti-currency-euro"></i> Cost</div><div class="fc__v">${esc(costFirst||'See provider')}</div></div>
-<div class="fc"><div class="fc__l"><i class="ti ti-map-pin"></i> Location</div><div class="fc__v">${esc(area)}, ${esc(county)}</div></div>
+<div class="lp-provider-row">${esc(provider)}<span class="lp-badge">Sortd Listed</span></div>
+<div class="lp-facts">
+<div class="lp-fact"><div class="lp-fact-l"><i class="ti ti-calendar-event"></i> Days</div><div class="lp-fact-v">${esc(daysFirst||'Mon–Fri')}</div></div>
+<div class="lp-fact"><div class="lp-fact-l"><i class="ti ti-users"></i> Ages</div><div class="lp-fact-v">${esc(agesDisplay)}</div></div>
+<div class="lp-fact"><div class="lp-fact-l"><i class="ti ti-currency-euro"></i> Cost</div><div class="lp-fact-v">${esc(costFirst||'See provider')}</div></div>
+<div class="lp-fact"><div class="lp-fact-l"><i class="ti ti-map-pin"></i> Location</div><div class="lp-fact-v">${esc(area)}, ${esc(county)}</div></div>
 </div>
 ${fullyBookedBanner}
-${nextStart && !isFullyBooked ? `<div class="sd"><div><div class="sd__l">Next start date</div><div class="sd__d">${esc(nextStart)}</div></div><i class="ti ti-calendar-check"></i></div>` : ''}
-${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="bb">${bookBtnLabel}</a>` : `<button class="bb" disabled style="opacity:.5;cursor:default">Contact provider to book</button>`}
-<button class="be" disabled>Send enquiry — coming soon</button>
+${nextStart && !isFullyBooked ? `<div class="lp-startdate"><div><div class="lp-startdate-l">Next start date</div><div class="lp-startdate-d">${esc(nextStart)}</div></div><i class="ti ti-calendar-check"></i></div>` : ''}
+${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-cta">${bookBtnLabel}</a>` : `<button class="lp-cta" disabled>Contact provider to book</button>`}
+<button class="lp-cta-ghost" disabled>Send enquiry — coming soon</button>
 </div>
 
-<div class="sc">
-<div class="sl">About this camp</div>
-<p class="ab">${esc(description)}</p>
+<div class="lp-card">
+<div class="lp-card-l">About this camp</div>
+<p class="lp-about">${esc(description)}</p>
 </div>
 
-<div class="sc">
-<div class="sl">Weeks available</div>
-<div class="wcs">${weeksHtml}</div>
+<div class="lp-card">
+<div class="lp-card-l">Weeks available</div>
+<div class="lp-weeks">${weeksHtml}</div>
 </div>
 
-<div class="sc">
-<div class="sl">Cost</div>
-<div class="cp">${esc(costFirst||'—')}</div>
-<div class="cpe">per child${timesFirst ? ' · '+esc(timesFirst) : ''}</div>
-${costNote ? `<div class="cn">${esc(costNote)}</div>` : ''}
+<div class="lp-card">
+<div class="lp-card-l">Cost</div>
+<div class="lp-cost">${esc(costFirst||'—')}</div>
+<div class="lp-cost-note">per child${timesFirst ? ' · '+esc(timesFirst) : ''}</div>
+${costNote ? `<div class="lp-cost-extra">${esc(costNote)}</div>` : ''}
 </div>
 
-<div class="sc">
-<div class="sl">Location</div>
-<div class="lr">
-<div class="lm"><i class="ti ti-map-pin"></i></div>
+<div class="lp-card">
+<div class="lp-card-l">Location</div>
+<div class="lp-loc">
+<div class="lp-loc-icon"><i class="ti ti-map-pin"></i></div>
 <div>
-<div class="la2">${locLines || esc(area+', '+county)}</div>
-<a href="https://maps.google.com/?q=${mapsQ}" target="_blank" rel="noopener" class="ld">Get directions <i class="ti ti-external-link"></i></a>
+<div class="lp-loc-text">${locLines || esc(area+', '+county)}</div>
+<a href="https://maps.google.com/?q=${mapsQ}" target="_blank" rel="noopener" class="lp-loc-link">Get directions <i class="ti ti-external-link"></i></a>
 </div>
 </div>
 </div>
@@ -588,50 +581,105 @@ ${siblingsHtml}
 
 <!-- SIDEBAR COLUMN -->
 <div class="sidebar">
-<div class="bx">
-<div class="sl" style="color:var(--pk)">How to book</div>
-${bookingUrl ? `<div class="br"><div class="br__l">Book online</div><div class="br__v"><i class="ti ti-external-link"></i><a href="${esc(bookingUrl)}" target="_blank" rel="noopener">${esc(bookingHostname)}</a></div></div>` : ''}
-${igHandle ? `<div class="br"><div class="br__l">Instagram</div><div class="br__v br__v--ig"><i class="ti ti-brand-instagram"></i><a href="${esc(instagram)}" target="_blank" rel="noopener">@${esc(igHandle)}</a></div></div>` : ''}
-${booking ? `<div class="br"><div class="br__l">How to book</div><div class="br__v br__n">${esc(booking)}</div></div>` : ''}
+<div class="lp-box">
+<div class="lp-card-l" style="color:#F4A7C3">How to book</div>
+${bookingUrl ? `<div class="lp-box-row"><div class="lp-box-l">Book online</div><div class="lp-box-v"><i class="ti ti-external-link"></i><a href="${esc(bookingUrl)}" target="_blank" rel="noopener">${esc(bookingHostname)}</a></div></div>` : ''}
+${igHandle ? `<div class="lp-box-row"><div class="lp-box-l">Instagram</div><div class="lp-box-v lp-box-v--ig"><i class="ti ti-brand-instagram"></i><a href="${esc(instagram)}" target="_blank" rel="noopener">@${esc(igHandle)}</a></div></div>` : ''}
+${booking ? `<div class="lp-box-row"><div class="lp-box-l">How to book</div><div class="lp-box-v lp-box-n">${esc(booking)}</div></div>` : ''}
 </div>
 
-<div class="sc">
-<div class="sl">Invite a friend</div>
-<div class="ib">
-<a href="https://wa.me/?text=${waText}" target="_blank" rel="noopener" class="ibt ibt--w"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>
-<a href="mailto:?subject=Found%20this%20on%20sortd&body=${emailBody}" class="ibt ibt--e"><i class="ti ti-mail"></i> Email</a>
-</div>
-</div>
-
-<div class="sn">${caveat}</div>
-
-<div class="ex">
-<div class="ex__l">Explore more</div>
-<div class="ex__ls">
-<a href="/dublin/northside/camps?cat=${catSlug}" class="ex__a"><i class="ti ti-arrow-right"></i> All ${esc(category)} camps in ${esc(county)}</a>
-<a href="/dublin/northside/camps?area=${areaSlug}" class="ex__a"><i class="ti ti-arrow-right"></i> All camps in ${esc(area||county)}</a>
-${ageSlug ? `<a href="/dublin/northside/camps?ages=${ageSlug}" class="ex__a"><i class="ti ti-arrow-right"></i> Camps for ages ${esc(agesDisplay)}</a>` : ''}
-<a href="/" class="ex__a"><i class="ti ti-arrow-right"></i> Back to all camps</a>
-</div>
+<div class="lp-card">
+<div class="lp-card-l">Invite a friend</div>
+<div class="lp-invite">
+<a href="https://wa.me/?text=${waText}" target="_blank" rel="noopener" class="lp-invite-btn lp-invite-btn--wa"><i class="ti ti-brand-whatsapp"></i> WhatsApp</a>
+<a href="mailto:?subject=Found%20this%20on%20sortd&body=${emailBody}" class="lp-invite-btn lp-invite-btn--em"><i class="ti ti-mail"></i> Email</a>
 </div>
 </div>
 
+<div class="note" style="background:#fff;border:1px solid var(--bd);border-radius:20px;padding:20px 22px;margin-bottom:16px;color:${cat.colour};">${caveat}</div>
+
+<div class="lp-explore">
+<div class="lp-explore-l">Explore more</div>
+<div class="lp-explore-ls">
+<a href="${hubPath}?text=${encodeURIComponent(category)}" class="lp-explore-a"><i class="ti ti-arrow-right"></i> All ${esc(category)} ${section==='classes'?'classes':'camps'} in ${esc(county)}</a>
+<a href="${hubPath}?q=${encodeURIComponent(area||county)}" class="lp-explore-a"><i class="ti ti-arrow-right"></i> All ${section==='classes'?'classes':'camps'} in ${esc(area||county)}</a>
+${ageKey ? `<a href="${hubPath}?age=${ageKey}" class="lp-explore-a"><i class="ti ti-arrow-right"></i> ${section==='classes'?'Classes':'Camps'} for ages ${esc(agesDisplay)}</a>` : ''}
+<a href="${hubPath}" class="lp-explore-a"><i class="ti ti-arrow-right"></i> Back to all ${section==='classes'?'weekly classes':'camps'}</a>
+</div>
 </div>
 </div>
 
-<footer class="footer">
-<div class="footer-inner">
-<span class="f-logo">sortd</span>
-<div class="f-links">
-<a href="/how-it-works">How it works</a>
-<a href="/recommend">Recommend a camp</a>
-<a href="/about">About</a>
-<a href="/privacy-policy">Privacy Policy</a>
-<a href="https://providers.sortd.ie">List your camp free</a>
 </div>
-<div class="f-bot">© 2026 sortd Ireland · Built by a mum in Malahide</div>
 </div>
+
+<footer>
+  <div class="foot-top">
+    <div>
+      <div class="foot-logo">sortd</div>
+      <p class="foot-tag">Every kids' camp &amp; weekly class across Leinster, in one place. Built by a mum. For parents.</p>
+      <div class="foot-social">
+        <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        </a>
+        <a href="https://whatsapp.com/channel/0029Vb7sv3eInlqMyMfLFY01" target="_blank" rel="noopener" aria-label="WhatsApp">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="foot-col">
+      <div class="foot-heading">Browse</div>
+      <a href="/camps?q=Dublin">Dublin camps</a>
+      <a href="/camps?q=Wicklow">Wicklow camps</a>
+      <a href="/camps?q=Meath">Meath camps</a>
+      <a href="/camps">All camps</a>
+      <a href="/weekly-classes">All weekly classes</a>
+    </div>
+    <div class="foot-col">
+      <div class="foot-heading">Company</div>
+      <a href="/how-it-works">How it works</a>
+      <a href="/about">About</a>
+      <a href="mailto:sortd.ireland@gmail.com?subject=Camp%20recommendation">Recommend an activity</a>
+      <a href="mailto:sortd.ireland@gmail.com">Contact</a>
+    </div>
+    <div class="foot-col">
+      <div class="foot-heading">For providers</div>
+      <a href="/list">Add a class — free</a>
+      <a href="/claim">Claim your listing</a>
+      <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener">Partners portal</a>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Sortd Ireland · <a href="/privacy-policy">Privacy Policy</a></div>
+    <div class="foot-source">Sources: provider websites, WhatsApp screenshots, Instagram. Confirm details with each provider before booking.</div>
+  </div>
 </footer>
+<div class="popup-overlay" id="popupOverlay" role="dialog" aria-modal="true" aria-label="Follow sortd on Instagram">
+<div class="popup">
+<button class="popup-close" onclick="closePopup()" aria-label="Close">&#10005;</button>
+<div class="popup-logo">sortd</div>
+<div class="popup-title">Follow on Instagram</div>
+<p class="popup-sub">New camps, open spots and last-minute updates — posted first on Instagram. No app, no spam, just what's on.</p>
+<a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener" class="popup-btn" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;">
+<i class="ti ti-brand-instagram" style="font-size:20px;"></i> Follow @sortd.ireland
+</a>
+</div>
+</div>
+<script>
+function openPopup() {
+  document.getElementById('popupOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closePopup() {
+  document.getElementById('popupOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+document.getElementById('popupOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closePopup();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closePopup();
+});
+</script>
 
 </body>
 </html>`;
