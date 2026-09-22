@@ -648,9 +648,22 @@ return { latestCommitSha, baseTreeSha, pathToSha };
 }
 
 // Commits only the files that actually changed, in one commit. Returns null
-// (no-op, no commit made) if nothing changed.
-async function commitFilesToGitHub(token, newFiles, message) {
-const { latestCommitSha, baseTreeSha, pathToSha } = await getCurrentTree(token);
+// (no-op, no commit made) if nothing changed. Accepts an already-fetched
+// tree (from getCurrentTree) so the caller can diff against it BEFORE
+// deciding whether to commit at all, without paying for a second fetch here.
+//
+// SPEED FIX: Netlify's synchronous function invocations have a hard wall-
+// clock limit, and the first version of this used a separate POST .../git/
+// blobs call per changed file before building the tree — with 100+ pages
+// changing on the very first unified run, that was 100+ sequential-ish
+// round trips to GitHub and blew the limit, so the function got killed
+// mid-run with nothing committed (admin.html saw a truncated response:
+// "Unexpected end of JSON input"). GitHub's create-tree endpoint accepts
+// inline `content` per entry and creates the blob itself server-side, so
+// this now makes exactly ONE tree-creation call no matter how many files
+// changed.
+async function commitFilesToGitHub(token, newFiles, message, prefetchedTree) {
+const { latestCommitSha, baseTreeSha, pathToSha } = prefetchedTree || await getCurrentTree(token);
 
 // GitHub tree paths never start with a leading slash.
 const changed = [];
@@ -658,7 +671,7 @@ for (const [filePath, content] of Object.entries(newFiles)) {
 const repoPath = filePath.replace(/^\//, '');
 const newSha = gitBlobSha1(content);
 if (pathToSha[repoPath] !== newSha) {
-changed.push({ repoPath, content, newSha });
+changed.push({ repoPath, content });
 }
 }
 
@@ -666,22 +679,12 @@ if (changed.length === 0) {
 return null; // nothing to do — no commit, no deploy triggered
 }
 
-// Create a blob for each changed file, bounded concurrency to be kind to
-// GitHub's rate limits when many pages change at once.
-const BLOB_CONCURRENCY = 8;
-let nextIndex = 0;
-const treeEntries = [];
-async function createNext() {
-while (nextIndex < changed.length) {
-const item = changed[nextIndex++];
-const blob = await githubApi(token, 'POST', `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/blobs`, {
-content: Buffer.from(item.content, 'utf8').toString('base64'),
-encoding: 'base64',
-});
-treeEntries.push({ path: item.repoPath, mode: '100644', type: 'blob', sha: blob.sha });
-}
-}
-await Promise.all(Array.from({ length: Math.min(BLOB_CONCURRENCY, changed.length) }, createNext));
+const treeEntries = changed.map(item => ({
+path: item.repoPath,
+mode: '100644',
+type: 'blob',
+content: item.content, // GitHub creates the blob itself from this
+}));
 
 const newTree = await githubApi(token, 'POST', `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/trees`, {
 base_tree: baseTreeSha,
