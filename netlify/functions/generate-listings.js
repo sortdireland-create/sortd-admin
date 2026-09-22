@@ -187,7 +187,9 @@ returnFieldsByFieldId: 'true',
 if (offset) params.append('offset', offset);
 
 const url = `https://api.airtable.com/v0/${AIRTABLE_BASE}/${AIRTABLE_TABLE}?${params}`;
+const t0 = Date.now(); // TEMP DIAGNOSTIC — see note in handler; safe to remove later
 const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
+console.log(`[generate-listings] Airtable page fetch -> ${res.status} in ${Date.now()-t0}ms (records so far: ${records.length})`);
 if (!res.ok) throw new Error(`Airtable ${res.status}: ${await res.text()}`);
 const data = await res.json();
 // Remap cellValuesByFieldId to fields for consistency
@@ -605,11 +607,13 @@ Accept: 'application/vnd.github+json',
 }
 
 async function githubApi(token, method, path, body) {
+const t0 = Date.now(); // TEMP DIAGNOSTIC — see note in handler; safe to remove later
 const res = await fetch(`https://api.github.com${path}`, {
 method,
 headers: githubHeaders(token),
 body: body !== undefined ? JSON.stringify(body) : undefined,
 });
+console.log(`[generate-listings] GitHub ${method} ${path} -> ${res.status} in ${Date.now()-t0}ms`);
 if (!res.ok) {
 const text = await res.text().catch(() => '');
 throw new Error(`GitHub API ${method} ${path} failed: ${res.status} ${text}`);
@@ -732,10 +736,21 @@ return { statusCode:401, body: JSON.stringify({ error:'Unauthorised' }) };
 if (!apiKey) return { statusCode:500, body: JSON.stringify({ error:'AIRTABLE_API_KEY not set in env vars' }) };
 if (!githubToken) return { statusCode:500, body: JSON.stringify({ error:'GITHUB_TOKEN not set in env vars' }) };
 
-try {
 const startTime = Date.now();
+try {
+// TEMP DIAGNOSTIC LOGGING (2026-09-22): the first two real runs both came
+// back with a truncated/empty response ("Unexpected end of JSON input")
+// and nothing ever committed, with no way to tell from admin.html which
+// step it died on. These console.log calls show up in Netlify's own
+// Function log (Functions > generate-listings), which streams in real
+// time even if the HTTP response back to admin.html never arrives — so
+// they let us see exactly how far a run got. Safe to remove once we've
+// confirmed a clean run end-to-end.
+const log = (step) => console.log(`[generate-listings] ${step} at +${Date.now()-startTime}ms`);
+log('start');
 
 const records = await fetchAllLiveRecords(apiKey, body.county || null);
+log(`fetched ${records.length} Airtable records`);
 
 const files = {};
 const manifest = [];
@@ -758,16 +773,19 @@ const pageUrl = `${BASE_URL}/${section}/${countySlug}/${slug}`;
 files[filePath] = generateHTML(record, records);
 manifest.push({ slug, county:countySlug, url:pageUrl, name, provider, section });
 }
+log(`generated ${manifest.length} page(s) in memory, ${skipped} skipped`);
 
 // Diff against what's currently committed BEFORE deciding whether to touch
 // sitemap.xml/manifest.json — those are only worth re-writing (and the
 // dated sitemap only worth bumping) when a real page actually changed, so
 // a day with no content changes makes no commit and triggers no deploy.
 const treeInfo = await getCurrentTree(githubToken);
+log(`fetched current git tree (${Object.keys(treeInfo.pathToSha).length} existing paths)`);
 const changedPages = Object.entries(files).filter(([filePath, content]) => {
 const repoPath = filePath.replace(/^\//, '');
 return treeInfo.pathToSha[repoPath] !== gitBlobSha1(content);
 });
+log(`diffed — ${changedPages.length} page(s) changed`);
 
 const elapsedNoChange = () => ((Date.now() - startTime) / 1000).toFixed(1);
 
@@ -803,7 +821,9 @@ files['/manifest.json'] = JSON.stringify(manifest, null, 2);
 const changedSlugs = changedPages.map(([filePath]) => filePath).slice(0, 8);
 const commitMessage = `Auto-update ${changedPages.length} listing page(s) via generate-listings\n\n${changedSlugs.join('\n')}${changedPages.length > changedSlugs.length ? `\n…and ${changedPages.length - changedSlugs.length} more` : ''}`;
 
+log('starting GitHub commit');
 const commitResult = await commitFilesToGitHub(githubToken, files, commitMessage, treeInfo);
+log(`commit done — sha ${commitResult ? commitResult.commitSha : 'none'}`);
 
 const elapsed = ((Date.now() - startTime) / 1000).toFixed(1);
 
@@ -821,6 +841,7 @@ pages: manifest.map(m => m.url.replace(BASE_URL, '')),
 };
 
 } catch (err) {
+console.log(`[generate-listings] FAILED at +${Date.now()-startTime}ms: ${err && err.stack || err}`);
 return { statusCode:500, body: JSON.stringify({ error: err.message }) };
 }
 };
