@@ -137,6 +137,7 @@ NOTES: 'fldf0DnzcUkCcg2gE',
 LIVE: 'fldBQ6YMcDuYPJkne',
 WEEKS: 'fldL6Cf1fiQIdIAby',
 TAGS: 'fldJi4Gme38iKvovO',
+TYPE: 'fldIKsf7AM5Jqr60K',
 };
 
 const WEEK_DATES = {
@@ -216,6 +217,16 @@ const n = clean(name);
 return n.startsWith(p) ? n : `${p}-${n}`;
 }
 function makeCountySlug(c) { return c.toLowerCase().replace(/\s+/g,'-'); }
+// URL SCHEME FIX (2026-09-22): route by Type so a Weekly Class doesn't get
+// published under /camps/... — Type is a singleSelect, so it may arrive as a
+// plain string or as a {id,name,color} object (same shape as Category, see
+// BUG 3 FIX above). Anything that isn't explicitly "Weekly Class" — including
+// "Holiday Camp" and any blank/unrecognized value — keeps the original
+// /camps/ section, so existing camp URLs are unaffected.
+function sectionForType(typeRaw) {
+const typeName = typeRaw && typeof typeRaw === 'object' ? typeRaw.name : (typeRaw||'');
+return typeName === 'Weekly Class' ? 'classes' : 'camps';
+}
 function esc(s) {
 return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -288,7 +299,8 @@ const weeks = Array.isArray(f[F.WEEKS])
 
 const countySlug = makeCountySlug(county||'ireland');
 const slug = makeSlug(provider, name);
-const pageUrl = `${BASE_URL}/camps/${countySlug}/${slug}`;
+const section = sectionForType(f[F.TYPE]);
+const pageUrl = `${BASE_URL}/${section}/${countySlug}/${slug}`;
 const cat = CATEGORY_CONFIG[category] || CATEGORY_CONFIG['default'];
 const caveat = CAVEAT_NOTES[category] || CAVEAT_NOTES['default'];
 const agesDisplay = ageMin && ageMax ? `${ageMin}–${ageMax} yrs` : ageMin ? `${ageMin}+ yrs` : 'All ages';
@@ -349,13 +361,14 @@ const rCounty = (rf[F.COUNTY]||'').trim();
 if (rProvider !== provider || !rName || !rCounty) return null;
 const rSlug = makeSlug(rProvider, rName);
 const rCountySlug = makeCountySlug(rCounty);
+const rSection = sectionForType(rf[F.TYPE]);
 const rAgeMin = rf[F.AGE_MIN]||'';
 const rAgeMax = rf[F.AGE_MAX]||'';
 const rNotes = (rf[F.NOTES]||'').trim();
 const rFull = /FULLY BOOKED/i.test(rNotes);
 return {
 name: rName,
-url: `/camps/${rCountySlug}/${rSlug}`,
+url: `/${rSection}/${rCountySlug}/${rSlug}`,
 ages: rAgeMin && rAgeMax ? `${rAgeMin}–${rAgeMax}` : '',
 full: rFull,
 };
@@ -813,11 +826,12 @@ if (!name || !provider || !county) { skipped++; continue; }
 
 const countySlug = makeCountySlug(county);
 const slug = makeSlug(provider, name);
-const filePath = `/camps/${countySlug}/${slug}.html`;
-const pageUrl = `${BASE_URL}/camps/${countySlug}/${slug}`;
+const section = sectionForType(f[F.TYPE]);
+const filePath = `/${section}/${countySlug}/${slug}.html`;
+const pageUrl = `${BASE_URL}/${section}/${countySlug}/${slug}`;
 
 files[filePath] = generateHTML(record, records);
-manifest.push({ slug, county:countySlug, url:pageUrl, name, provider });
+manifest.push({ slug, county:countySlug, url:pageUrl, name, provider, section });
 }
 
 // Full sitemap: static/hub pages + every live camp page.
