@@ -63,7 +63,58 @@ TAGS: 'fldJi4Gme38iKvovO',
 TYPE: 'fldIKsf7AM5Jqr60K',
 COST_VALUE: 'fldISJYKzDZJYdE8r',
 POSTCODE: 'fldwRc0BuvcO0T2gy',
+DATE_END: 'fldgKIJM3jcMig7Ji',
 };
+
+// ============================================================
+// EXPIRY CHECK (added 2026-09-22)
+//
+// A Holiday Camp with an end date in the past should stop showing up in
+// search/browse once it's over. Discovered 2026-09-22 that this was never
+// enforced — 58 of 201 "live" listings turned out to already be finished
+// (Designer Minds' ~50 summer locations, Navan Adventure Centre, Keys &
+// Strings, Alive Outside, Neurodiversity Ireland's summer editions, LetsGo
+// Wicklow, Malahide Cricket Club), all still generating pages and showing
+// in search because nothing ever checked the date against Live=true.
+//
+// Checks DateEnd first (most records have it); falls back to the latest
+// selected Week's known end date for older records that only have Weeks
+// set. If neither is available, treats the record as NOT expired — can't
+// safely determine, so don't guess and accidentally hide something real.
+// Weekly Classes are recurring/ongoing and not checked here.
+//
+// This does not delete or un-publish already-committed pages for expired
+// camps (same "redirect, don't delete" caution as the URL migration) — it
+// only stops including them in new pages/sitemap/manifest/camps-data.js
+// going forward, so old direct links don't suddenly 404.
+// ============================================================
+const WEEK_END_DATES = {
+'Week 1':'2026-07-03','Week 2':'2026-07-10','Week 3':'2026-07-17',
+'Week 4':'2026-07-24','Week 5':'2026-07-31','Week 6':'2026-08-07',
+'Week 7':'2026-08-14','Week 8':'2026-08-21','Week 9':'2026-08-28',
+};
+function isExpiredCamp(f, todayStr) {
+const typeRaw = f[F.TYPE];
+const typeName = typeRaw && typeof typeRaw === 'object' ? typeRaw.name : (typeRaw||'');
+if (typeName === 'Weekly Class') return false;
+
+const dateEnd = f[F.DATE_END];
+if (typeof dateEnd === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateEnd)) {
+return dateEnd.slice(0, 10) < todayStr;
+}
+
+const weeksRaw = f[F.WEEKS];
+if (Array.isArray(weeksRaw) && weeksRaw.length) {
+const weekNames = weeksRaw.map(w => (w && typeof w === 'object') ? w.name : String(w || ''));
+const endDates = weekNames.map(w => WEEK_END_DATES[w]).filter(Boolean);
+if (endDates.length) {
+const latestEnd = endDates.sort().slice(-1)[0];
+return latestEnd < todayStr;
+}
+}
+
+return false; // no reliable date data on this record — don't guess
+}
 
 const WEEK_DATES = {
 'Week 1':'29 Jun – 3 Jul','Week 2':'6–10 Jul','Week 3':'13–17 Jul',
@@ -781,6 +832,8 @@ const files = {};
 const manifest = [];
 const listings = [];
 let skipped = 0;
+let skippedExpired = 0;
+const todayStr = new Date().toISOString().slice(0, 10);
 
 for (const record of records) {
 const f = record.fields;
@@ -789,6 +842,7 @@ const provider = (f[F.PROVIDER]||'').trim();
 const county = (f[F.COUNTY] ||'').trim();
 
 if (!name || !provider || !county) { skipped++; continue; }
+if (isExpiredCamp(f, todayStr)) { skippedExpired++; continue; }
 
 const countySlug = makeCountySlug(county);
 const slug = makeSlug(provider, name);
@@ -862,6 +916,7 @@ body: JSON.stringify({
 success: true,
 generated: manifest.length,
 skipped,
+skippedExpired,
 changed: 0,
 elapsed: `${elapsedNoChange()}s`,
 pages: manifest.map(m => m.url.replace(BASE_URL, '')),
@@ -897,6 +952,7 @@ body: JSON.stringify({
 success: true,
 generated: manifest.length,
 skipped,
+skippedExpired,
 changed: commitResult ? commitResult.filesChanged.length : 0,
 commitSha: commitResult ? commitResult.commitSha : null,
 elapsed: `${elapsed}s`,
