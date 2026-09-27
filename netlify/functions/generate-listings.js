@@ -395,6 +395,7 @@ gtag('js', new Date());
 gtag('config', 'G-HHTB7S9WJG');
 </script>
 <script src="/js/booking-tracking.js" defer></script>
+<script src="/js/newsletter-signup.js" defer></script>
 <title>${esc(name)} — ${esc(area)}, ${esc(county)} | sortd</title>
 <meta name="description" content="${esc(metaDesc)}">
 <link rel="canonical" href="${pageUrl}">
@@ -615,6 +616,19 @@ ${ageKey ? `<a href="${hubPath}?age=${ageKey}" class="lp-explore-a"><i class="ti
 </div>
 
 <footer>
+  <div class="foot-nl">
+    <div class="foot-nl-inner">
+      <div>
+        <div class="foot-nl-title">Get "what's on near you" every week</div>
+        <p class="foot-nl-sub">New camps, open spots and honest updates — straight to your inbox. No spam.</p>
+      </div>
+      <form class="foot-nl-form">
+        <input class="foot-nl-input" type="email" name="email" placeholder="your@email.ie" aria-label="Email address" required>
+        <button class="foot-nl-btn" type="submit">Join free</button>
+      </form>
+    </div>
+    <p class="foot-nl-msg" role="status" aria-live="polite"></p>
+  </div>
   <div class="foot-top">
     <div>
       <div class="foot-logo">sortd</div>
