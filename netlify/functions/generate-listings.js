@@ -353,6 +353,15 @@ const fullyBookedBanner = isFullyBooked ? `
 <p class="lp-fb-banner-p">This one is full, but spaces sometimes open up when families cancel. Join the waitlist to be first in line.</p>
 </div>` : '';
 
+// Restricted / members-only listing — signalled by the provider (or Rachel)
+// putting "MEMBERS ONLY" in Notes, same convention as FULLY BOOKED above.
+// Rendered as a ribbon across the very top of the page, above the nav, so
+// it's the first thing a visitor sees before they read anything else —
+// this is for listings like Hi5's that aren't open-enrolment.
+const isMembersOnly = /MEMBERS ONLY/i.test(notes);
+const membersOnlyRibbon = isMembersOnly ? `
+<div class="lp-mo-ribbon"><i class="ti ti-lock"></i> For existing members only</div>` : '';
+
 // Sibling camps — other live listings from the same provider, so multi-age-group
 // or multi-location providers (NDI, Designer Minds, etc.) automatically cross-link
 // without any manual page-building.
@@ -507,13 +516,15 @@ h1{font-weight:800;font-size:clamp(22px,3.5vw,36px);line-height:1.1;color:var(--
 .lp-fb-banner{background:#FFF7E8;border:2px solid #D9971E;border-radius:16px;padding:20px 24px;margin-bottom:24px;}
 .lp-fb-banner-t{font-size:1.15rem;font-weight:800;color:#8a5f0f;margin-bottom:6px;}
 .lp-fb-banner-p{font-size:.92rem;color:#6b4a0c;line-height:1.6;margin:0;}
+.lp-mo-ribbon{background:var(--nv);color:#fff;text-align:center;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:.92rem;letter-spacing:.01em;padding:11px 16px;display:flex;align-items:center;justify-content:center;gap:8px;}
+.lp-mo-ribbon .ti{font-size:1.05rem;}
 .lp-sibling-link{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;background:var(--pg);border-radius:12px;text-decoration:none;color:var(--nv);font-weight:600;font-size:.88rem;margin-top:10px;}
 .lp-sibling-link .lp-avail{font-size:.74rem;color:var(--gr);font-weight:700;white-space:nowrap;}
 .lp-sibling-link .lp-full{font-size:.74rem;color:#8a5f0f;font-weight:700;white-space:nowrap;}
 </style>
 </head>
 <body data-listing-id="${esc(record.id)}" data-listing-name="${esc(name)}" data-provider="${esc(provider)}" data-listing-type="${listingType}">
-
+${membersOnlyRibbon}
 <nav>
   <a href="/" class="brand">sortd<span>.</span></a>
   <div class="navlinks">
