@@ -57,6 +57,7 @@ BOOKING: 'fldNP69Qh7Hw3YZx2',
 INSTAGRAM: 'fldgem2tL1nbTbgPr',
 ACTIVITIES: 'fldELpg99Iz6mNrIB',
 NOTES: 'fldf0DnzcUkCcg2gE',
+AVAILABILITY: 'fldaxaUQBfKAsWQrf', // singleSelect: Open / Limited spaces / Waitlist (blank = Open)
 LIVE: 'fldBQ6YMcDuYPJkne',
 WEEKS: 'fldL6Cf1fiQIdIAby',
 TAGS: 'fldJi4Gme38iKvovO',
@@ -216,6 +217,20 @@ function sectionForType(typeRaw) {
 const typeName = typeRaw && typeof typeRaw === 'object' ? typeRaw.name : (typeRaw||'');
 return typeName === 'Weekly Class' ? 'classes' : 'camps';
 }
+// AVAILABILITY (added 2026-10-04): the single source of truth for the
+// LIVE NOW / LIMITED SPACES / WAITLIST state, used by the listing page, the
+// sibling-camp tags and the camps-data.js search index so they can't disagree.
+// Returns 'Open', 'Limited spaces', 'Waitlist' or '' (field left blank).
+// Availability is a singleSelect, so it may arrive as {id,name,color} or a
+// plain string. Only when the field is blank do we fall back to the old
+// convention of "FULLY BOOKED" typed into Notes (exact phrase only, so
+// "waiting lists have reopened" can never flag a listing as waitlisted).
+function availabilityOf(fields) {
+const raw = fields[F.AVAILABILITY];
+const name = raw && typeof raw === 'object' ? raw.name : (raw||'');
+if (name) return name;
+return /FULLY BOOKED/i.test(fields[F.NOTES]||'') ? 'Waitlist' : '';
+}
 function esc(s) {
 return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -327,15 +342,15 @@ catch { bookingHostname = bookingUrl.replace(/https?:\/\/(www\.)?/,'').split('/'
 // ANY camp tagged this way, not just one provider.
 const isNeurodivergent = /neurodivergent/i.test(tags);
 
-// Fully-booked / waitlist state — signalled by the provider putting
-// "FULLY BOOKED" in Notes. Swaps the CTA to a waitlist link instead of
-// hiding the page, so sold-out camps still rank and still convert waitlist signups.
-const isFullyBooked = /FULLY BOOKED/i.test(notes);
+// Waitlist state — driven by the Availability field (see availabilityOf).
+// Swaps the CTA to a waitlist link instead of hiding the page, so full
+// listings still rank and still convert waitlist signups.
+const isFullyBooked = availabilityOf(f) === 'Waitlist';
 const bookBtnLabel = isFullyBooked ? 'Join the waitlist ↗' : 'Book this camp ↗';
 const fullyBookedBanner = isFullyBooked ? `
-<div class="fb-banner">
-<div class="fb-banner__t">😔 Fully booked for this summer</div>
-<p class="fb-banner__p">This camp has sold out, but spaces sometimes open up when families cancel — join the waitlist to be first in line.</p>
+<div class="lp-fb-banner">
+<div class="lp-fb-banner-t">Fully booked right now</div>
+<p class="lp-fb-banner-p">This one is full, but spaces sometimes open up when families cancel. Join the waitlist to be first in line.</p>
 </div>` : '';
 
 // Sibling camps — other live listings from the same provider, so multi-age-group
@@ -354,8 +369,7 @@ const rCountySlug = makeCountySlug(rCounty);
 const rSection = sectionForType(rf[F.TYPE]);
 const rAgeMin = rf[F.AGE_MIN]||'';
 const rAgeMax = rf[F.AGE_MAX]||'';
-const rNotes = (rf[F.NOTES]||'').trim();
-const rFull = /FULLY BOOKED/i.test(rNotes);
+const rFull = availabilityOf(rf) === 'Waitlist';
 return {
 name: rName,
 url: `/${rSection}/${rCountySlug}/${rSlug}`,
@@ -947,6 +961,7 @@ days: (f[F.DAYS]||'').trim(),
 bookingUrl: (f[F.BOOKING_URL]||'').trim(),
 weeks: weeksArr,
 notes: (f[F.NOTES]||'').trim(),
+availability: availabilityOf(f),
 listingUrl: `/${section}/${countySlug}/${slug}`,
 postcode: (f[F.POSTCODE]||'').trim(),
 type,
