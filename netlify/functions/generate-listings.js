@@ -556,7 +556,7 @@ ${membersOnlyRibbon}
   <div style="display:flex; align-items:center; gap:12px;">
     <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener"><i class="ti ti-brand-instagram nav-icon"></i></a>
     <a href="/list" class="nav-cta-outline">Add a class</a>
-    <button class="nav-cta" onclick="openPopup()">Follow us</button>
+    <button class="nav-cta" onclick="openPopup()">Get the newsletter</button>
   </div>
 </nav>
 
@@ -713,15 +713,17 @@ ${ageKey ? `<a href="${hubPath}?age=${ageKey}" class="lp-explore-a"><i class="ti
     <div class="foot-source">Sources: provider websites, WhatsApp screenshots, Instagram. Confirm details with each provider before booking.</div>
   </div>
 </footer>
-<div class="popup-overlay" id="popupOverlay" role="dialog" aria-modal="true" aria-label="Follow sortd on Instagram">
+<div class="popup-overlay" id="popupOverlay" role="dialog" aria-modal="true" aria-label="Get the Thursday email from sortd">
 <div class="popup">
 <button class="popup-close" onclick="closePopup()" aria-label="Close">&#10005;</button>
 <div class="popup-logo">sortd</div>
-<div class="popup-title">Follow on Instagram</div>
-<p class="popup-sub">New camps, open spots and last-minute updates — posted first on Instagram. No app, no spam, just what's on.</p>
-<a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener" class="popup-btn" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;">
-<i class="ti ti-brand-instagram" style="font-size:20px;"></i> Follow @sortd.ireland
-</a>
+<div class="popup-title">Get the Thursday email</div>
+<p class="popup-sub">New camps, open spots and honest updates, once a week. Free, and you can unsubscribe in one click.</p>
+<form class="popup-form">
+<input class="popup-input" type="email" name="email" placeholder="Your email address" required autocomplete="email" aria-label="Email address">
+<button class="popup-btn" type="submit">Get the Thursday email</button>
+</form>
+<div class="popup-msg" role="status"></div>
 </div>
 </div>
 <script>
@@ -866,7 +868,7 @@ gtag('config', 'G-HHTB7S9WJG');
   <div style="display:flex; align-items:center; gap:12px;">
     <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener"><i class="ti ti-brand-instagram nav-icon"></i></a>
     <a href="/list" class="nav-cta-outline">Add a class</a>
-    <button class="nav-cta" onclick="openPopup()">Follow us</button>
+    <button class="nav-cta" onclick="openPopup()">Get the newsletter</button>
   </div>
 </nav>
 
@@ -936,15 +938,17 @@ ${cardsHtml}
     <div class="foot-source">Sources: provider websites, WhatsApp screenshots, Instagram. Confirm details with each provider before booking.</div>
   </div>
 </footer>
-<div class="popup-overlay" id="popupOverlay" role="dialog" aria-modal="true" aria-label="Follow sortd on Instagram">
+<div class="popup-overlay" id="popupOverlay" role="dialog" aria-modal="true" aria-label="Get the Thursday email from sortd">
 <div class="popup">
 <button class="popup-close" onclick="closePopup()" aria-label="Close">&#10005;</button>
 <div class="popup-logo">sortd</div>
-<div class="popup-title">Follow on Instagram</div>
-<p class="popup-sub">New camps, open spots and last-minute updates — posted first on Instagram. No app, no spam, just what's on.</p>
-<a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener" class="popup-btn" style="display:flex;align-items:center;justify-content:center;gap:8px;text-decoration:none;">
-<i class="ti ti-brand-instagram" style="font-size:20px;"></i> Follow @sortd.ireland
-</a>
+<div class="popup-title">Get the Thursday email</div>
+<p class="popup-sub">New camps, open spots and honest updates, once a week. Free, and you can unsubscribe in one click.</p>
+<form class="popup-form">
+<input class="popup-input" type="email" name="email" placeholder="Your email address" required autocomplete="email" aria-label="Email address">
+<button class="popup-btn" type="submit">Get the Thursday email</button>
+</form>
+<div class="popup-msg" role="status"></div>
 </div>
 </div>
 <script>
