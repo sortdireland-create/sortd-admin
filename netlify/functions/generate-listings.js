@@ -157,6 +157,7 @@ const CATEGORY_CONFIG = new Proxy({}, { get: (_, cat) => categoryStyle(String(ca
 const STATIC_PAGES = [
 { path: '/', changefreq: 'daily', priority: '1.0' },
 { path: '/about', changefreq: 'monthly', priority: '0.5' },
+{ path: '/newsletter', changefreq: 'monthly', priority: '0.6' },
 { path: '/how-it-works', changefreq: 'monthly', priority: '0.5' },
 { path: '/recommend', changefreq: 'monthly', priority: '0.4' },
 { path: '/privacy-policy', changefreq: 'yearly', priority: '0.2' },
