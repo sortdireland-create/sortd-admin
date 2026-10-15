@@ -413,7 +413,21 @@
           body: JSON.stringify({ password: savedPassword, county: county || null }),
         });
 
-        const data = await res.json();
+        // A full run can take longer than the browser will wait. The server keeps
+        // going and commits anyway, so an empty/non-JSON reply (504, dropped
+        // connection) means "still running", not "failed".
+        const raw = await res.text();
+        let data = null;
+        try { data = JSON.parse(raw); } catch (e) { data = null; }
+
+        if (!data && res.status !== 401) {
+          log('', '');
+          log('⏳ Started. This run is taking a while, so the page stopped waiting.', 'hi');
+          log('  It is still running on the server and will commit to sortd-site by itself.', 'dim');
+          log('  Check back in a minute or two: sortd-site on GitHub should show a new', 'dim');
+          log('  "Auto-update N listing pages via generate-listings" commit.', 'dim');
+          return;
+        }
 
         if (res.status === 401) {
           log('✗ Wrong password.', 'err');
@@ -454,7 +468,9 @@
         successBanner.classList.add('visible');
 
       } catch (err) {
-        log(`✗ Network error: ${err.message}`, 'err');
+        log('⏳ Lost the connection while waiting. The run may still be going on the server.', 'hi');
+        log('  Check sortd-site on GitHub for a new "Auto-update … listing pages" commit in a minute or two.', 'dim');
+        log(`  (${err.message})`, 'dim');
       } finally {
         btn.disabled = false;
         btn.innerHTML = '<i class="ti ti-rocket"></i> Generate all pages';
