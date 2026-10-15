@@ -556,7 +556,7 @@ ${membersOnlyRibbon}
   </div>
   <div style="display:flex; align-items:center; gap:12px;">
     <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener"><i class="ti ti-brand-instagram nav-icon"></i></a>
-    <button class="nav-cta" onclick="openPopup()">Get the newsletter</button>
+    <a href="/newsletter" class="nav-cta">Get the newsletter</a>
   </div>
 </nav>
 
@@ -867,7 +867,7 @@ gtag('config', 'G-HHTB7S9WJG');
   </div>
   <div style="display:flex; align-items:center; gap:12px;">
     <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener"><i class="ti ti-brand-instagram nav-icon"></i></a>
-    <button class="nav-cta" onclick="openPopup()">Get the newsletter</button>
+    <a href="/newsletter" class="nav-cta">Get the newsletter</a>
   </div>
 </nav>
 
