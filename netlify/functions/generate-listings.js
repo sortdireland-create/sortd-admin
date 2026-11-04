@@ -64,6 +64,7 @@ TAGS: 'fldJi4Gme38iKvovO',
 TYPE: 'fldIKsf7AM5Jqr60K',
 COST_VALUE: 'fldISJYKzDZJYdE8r',
 POSTCODE: 'fldwRc0BuvcO0T2gy',
+DATE_START: 'fldwCRNqtDFTs7u4N',
 DATE_END: 'fldgKIJM3jcMig7Ji',
 SCHOOLS: 'fldI7BPPhFNmVtoGZ',
 };
@@ -95,15 +96,32 @@ const WEEK_END_DATES = {
 'Week 4':'2026-07-24','Week 5':'2026-07-31','Week 6':'2026-08-07',
 'Week 7':'2026-08-14','Week 8':'2026-08-21','Week 9':'2026-08-28',
 };
+// UPDATED 2026-11-04 (retiring the Halloween 2026 camps), per Rachel:
+// - DateEnd now applies to EVERY listing type, Weekly Classes included. A
+//   class whose end date has passed (e.g. a term block or a seasonal
+//   "Autumn & Halloween" class) drops out of search like a camp does. A
+//   Weekly Class with no DateEnd is still treated as ongoing.
+// - New last-resort fallback for camps/one-offs with only a DateStart (the
+//   provider self-submit form often leaves DateEnd blank — Playball's and
+//   GCakes' Halloween submissions both did): treat it as over once
+//   START_ONLY_GRACE_DAYS have passed since it started. Holiday camps here
+//   run a week at most; multi-week summer camps use Weeks/DateEnd instead.
+const START_ONLY_GRACE_DAYS = 6;
+const isoDate = v => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(v)) ? v.slice(0, 10) : null;
+function addDays(iso, n) {
+const d = new Date(iso + 'T00:00:00Z');
+d.setUTCDate(d.getUTCDate() + n);
+return d.toISOString().slice(0, 10);
+}
+
 function isExpiredCamp(f, todayStr) {
 const typeRaw = f[F.TYPE];
 const typeName = typeRaw && typeof typeRaw === 'object' ? typeRaw.name : (typeRaw||'');
-if (typeName === 'Weekly Class') return false;
 
-const dateEnd = f[F.DATE_END];
-if (typeof dateEnd === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateEnd)) {
-return dateEnd.slice(0, 10) < todayStr;
-}
+const dateEnd = isoDate(f[F.DATE_END]);
+if (dateEnd) return dateEnd < todayStr;
+
+if (typeName === 'Weekly Class') return false; // ongoing unless it has an end date
 
 const weeksRaw = f[F.WEEKS];
 if (Array.isArray(weeksRaw) && weeksRaw.length) {
@@ -114,6 +132,9 @@ const latestEnd = endDates.sort().slice(-1)[0];
 return latestEnd < todayStr;
 }
 }
+
+const dateStart = isoDate(f[F.DATE_START]);
+if (dateStart) return addDays(dateStart, START_ONLY_GRACE_DAYS) < todayStr;
 
 return false; // no reliable date data on this record — don't guess
 }
