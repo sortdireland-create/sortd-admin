@@ -310,6 +310,320 @@ return records;
 // ============================================================
 // HTML GENERATOR
 // ============================================================
+// Shared site chrome, matching the homepage nav (5 Nov 2026) and footer.
+const SITE_NAV = `<nav>
+  <a href="/" class="brand">sortd<span>.</span></a>
+  <div class="navlinks">
+    <a href="/find-an-activity" class="navlink">Find an activity</a>
+    <a href="/how-it-works" class="navlink">How it works</a>
+    <a href="/about" class="navlink">Our story</a>
+    <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener" class="navlink">Providers</a>
+    <a href="/login" class="navlink" id="nav-account-link">Parents</a>
+  </div>
+  <div style="display:flex; align-items:center; gap:12px;">
+    <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener" aria-label="Sortd on Instagram"><i class="ti ti-brand-instagram nav-icon"></i></a>
+    <a href="/newsletter" class="nav-cta">Get the newsletter</a>
+  </div>
+</nav>`;
+const SITE_FOOTER = `<footer>
+  <div class="foot-nl">
+    <div class="foot-nl-inner">
+      <div>
+        <div class="foot-nl-title">Get "what's on near you" every week</div>
+        <p class="foot-nl-sub">New camps, open spots and honest updates — straight to your inbox. No spam.</p>
+      </div>
+      <form class="foot-nl-form">
+        <input class="foot-nl-input" type="email" name="email" placeholder="your@email.ie" aria-label="Email address" required>
+        <button class="foot-nl-btn" type="submit">Join free</button>
+      </form>
+    </div>
+    <p class="foot-nl-msg" role="status" aria-live="polite"></p>
+  </div>
+  <div class="foot-top">
+    <div>
+      <div class="foot-logo">sortd</div>
+      <p class="foot-tag">Every kids' camp &amp; class across Leinster, in one place. Built by a mum. For parents.</p>
+      <div class="foot-social">
+        <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener" aria-label="Instagram">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        </a>
+        <a href="https://whatsapp.com/channel/0029Vb7sv3eInlqMyMfLFY01" target="_blank" rel="noopener" aria-label="WhatsApp">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="foot-col">
+      <div class="foot-heading">Browse</div>
+      <a href="/camps?q=Dublin">Dublin camps</a>
+      <a href="/camps?q=Wicklow">Wicklow camps</a>
+      <a href="/camps?q=Meath">Meath camps</a>
+      <a href="/camps">All camps</a>
+      <a href="/weekly-classes">All classes</a>
+    </div>
+    <div class="foot-col">
+      <div class="foot-heading">Company</div>
+      <a href="/how-it-works">How it works</a>
+      <a href="/about">About</a>
+      <a href="mailto:sortd.ireland@gmail.com?subject=Camp%20recommendation">Recommend an activity</a>
+      <a href="mailto:sortd.ireland@gmail.com">Contact</a>
+    </div>
+    <div class="foot-col">
+      <div class="foot-heading">For providers</div>
+      <a href="/list">Add a class — free</a>
+      <a href="/claim">Claim your listing</a>
+      <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener">Partners portal</a>
+    </div>
+  </div>
+  <div class="foot-bottom">
+    <div>© 2026 Sortd Ireland · <a href="/privacy-policy">Privacy Policy</a></div>
+    <div class="foot-source">Sources: provider websites, WhatsApp screenshots, Instagram. Confirm details with each provider before booking.</div>
+  </div>
+</footer>
+<div class="popup-overlay" id="popupOverlay" role="dialog" aria-modal="true" aria-label="Get the Thursday email from sortd">
+<div class="popup">
+<button class="popup-close" onclick="closePopup()" aria-label="Close">&#10005;</button>
+<div class="popup-logo">sortd</div>
+<div class="popup-title">Get the Thursday email</div>
+<p class="popup-sub">New camps, open spots and honest updates, once a week. Free, and you can unsubscribe in one click.</p>
+<form class="popup-form">
+<input class="popup-input" type="email" name="email" placeholder="Your email address" required autocomplete="email" aria-label="Email address">
+<button class="popup-btn" type="submit">Get the Thursday email</button>
+</form>
+<div class="popup-msg" role="status"></div>
+</div>
+</div>
+<script>
+function openPopup() {
+  document.getElementById('popupOverlay').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closePopup() {
+  document.getElementById('popupOverlay').classList.remove('show');
+  document.body.style.overflow = '';
+}
+document.getElementById('popupOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closePopup();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closePopup();
+});
+</script>`;
+
+// ============================================================
+// WEEKLY CLASS PAGES (redesigned 5 Nov 2026, per Rachel: class pages were
+// using camp wording and were too busy). One sticky action card (Book with
+// provider, Add to my calendar, Save, Share), the full timetable grouped by
+// day and venue, and nothing camp-specific (no weeks, no camp script note).
+// Styles live in sortd-site /css/class-page.css and behaviour in
+// /js/class-page.js, so design tweaks don't need every page regenerated.
+// ============================================================
+const DAY_FULL = {mon:'Monday',tue:'Tuesday',wed:'Wednesday',thu:'Thursday',fri:'Friday',sat:'Saturday',sun:'Sunday'};
+function timetableHTML(times) {
+const lines = String(times||'').split('\n').map(l => l.trim()).filter(Boolean);
+if (!lines.length) return '';
+const groups = []; const plain = [];
+lines.forEach(line => {
+const m = line.match(/^([A-Za-z]{3,9})\.?\s*(?:\(([^)]*)\))?\s*:\s*(.+)$/);
+const day = m && DAY_FULL[m[1].toLowerCase().slice(0,3)];
+if (!day) { plain.push(line); return; }
+const slots = m[3].split(/,\s*(?=\d)/).map(x => x.trim()).filter(Boolean).map(x => {
+const t = x.match(/^([\d:.]+\s*(?:am|pm)?\s*[-–]\s*[\d:.]+\s*(?:am|pm)?)\s*(.*)$/i);
+return t ? { time: t[1].replace(/\s*[-–]\s*/, '–'), what: t[2] } : { time: '', what: x };
+});
+groups.push({ day, venue: (m[2]||'').trim(), slots });
+});
+let html = '';
+if (groups.length) {
+html += '<div class="cl-tt">' + groups.map(g => `<div class="cl-tt-grp"><h3>${esc(g.day)}${g.venue ? ` <span>· ${esc(g.venue)}</span>` : ''}</h3>` +
+g.slots.map(s => `<div class="cl-tt-row"><b>${esc(s.time)}</b><span>${esc(s.what)}</span></div>`).join('') + '</div>').join('') + '</div>';
+}
+if (plain.length) html += `<ul class="cl-tt-plain${groups.length ? ' cl-tt-more' : ''}">` + plain.map(l => `<li>${esc(l)}</li>`).join('') + '</ul>';
+return html;
+}
+
+function generateClassHTML(record, allRecords) {
+const f = record.fields;
+const name = (f[F.NAME]||'').trim();
+const provider = (f[F.PROVIDER]||'').trim();
+const tags = (f[F.TAGS]||'').trim();
+const categoryRaw = f[F.CATEGORY];
+const category = categoryRaw && typeof categoryRaw === 'object' ? categoryRaw.name : (categoryRaw||'');
+const ageMin = f[F.AGE_MIN]||'';
+const ageMax = f[F.AGE_MAX]||'';
+const days = (f[F.DAYS]||'').trim();
+const times = (f[F.TIMES]||'').trim();
+const cost = (f[F.COST]||'').trim();
+const location = (f[F.LOCATION]||'').trim();
+const area = (f[F.AREA]||'').trim();
+const county = (f[F.COUNTY]||'').trim();
+const bookingUrl = (f[F.BOOKING_URL]||'').trim();
+const booking = (f[F.BOOKING]||'').trim();
+const instagram = (f[F.INSTAGRAM]||'').trim();
+const activities = (f[F.ACTIVITIES]||'').trim();
+const notes = (f[F.NOTES]||'').trim();
+const dateStart = isoDate(f[F.DATE_START]);
+const dateEnd = isoDate(f[F.DATE_END]);
+
+const countySlug = makeCountySlug(county||'ireland');
+const slug = makeSlug(provider, name);
+const pageUrl = `${BASE_URL}/classes/${countySlug}/${slug}`;
+const cat = CATEGORY_CONFIG[category] || CATEGORY_CONFIG['default'];
+const agesDisplay = ageMin && ageMax ? `Ages ${ageMin}–${ageMax}` : ageMin ? `Ages ${ageMin}+` : 'All ages';
+const costFirst = cost.split('\n')[0].trim();
+const costNote = cost.includes('\n') ? cost.split('\n').slice(1).join('\n').trim() : '';
+const description = activities || notes || `${category} class in ${area||county}.`;
+const descClean = description.replace(/\n/g,' ').trim();
+const sfx = `. Weekly ${category.toLowerCase()} class in ${area}, ${county}${ageMin&&ageMax ? ` for ages ${ageMin}–${ageMax}` : ''}. On sortd.`;
+const metaDesc = (descClean.length > 155-sfx.length ? descClean.substring(0,155-sfx.length-1)+'…' : descClean) + sfx;
+const title = name.toLowerCase().startsWith(provider.toLowerCase().split(' ')[0].toLowerCase()) ? name : provider + ' — ' + name;
+const daysShort = days.replace(/\n/g, ', ').replace(/Monday/g,'Mon').replace(/Tuesday/g,'Tue').replace(/Wednesday/g,'Wed').replace(/Thursday/g,'Thu').replace(/Friday/g,'Fri').replace(/Saturday/g,'Sat').replace(/Sunday/g,'Sun');
+const isNeurodivergent = /neurodivergent/i.test(tags);
+const isFullyBooked = availabilityOf(f) === 'Waitlist';
+const isMembersOnly = /MEMBERS ONLY/i.test(notes);
+const realLocation = location && !/confirm with provider/i.test(location);
+const igHandle = instagram ? instagram.replace(/https?:\/\/(www\.)?instagram\.com\//,'').replace(/\/$/,'') : null;
+let bookingHostname = '';
+if (bookingUrl) { try { bookingHostname = new URL(bookingUrl).hostname.replace(/^www\./,''); } catch { bookingHostname = bookingUrl.replace(/https?:\/\/(www\.)?/,'').split('/')[0]; } }
+const provShort = provider.length > 24 ? 'provider' : provider;
+const bookLabel = isFullyBooked ? 'Join the waitlist' : `Book with ${provShort}`;
+
+// Venues named in the timetable, e.g. "Mon (St. Nicholas Hall): ..."
+const venues = [];
+times.split('\n').forEach(l => { const m = l.match(/^[A-Za-z]{3,9}\.?\s*\(([^)]*)\)\s*:/); if (m && !venues.includes(m[1].trim())) venues.push(m[1].trim()); });
+const mapsQ = encodeURIComponent((realLocation ? location.replace(/\n/g,', ') : `${area}, ${county}`));
+const whereHtml = realLocation
+? location.split('\n').map(l => esc(l.trim())).filter(Boolean).join('<br>')
+: venues.length ? `${esc(area)}, ${esc(county)}. Classes run at ${venues.map(esc).join(', ')}.` : `${esc(area)}, ${esc(county)}. The provider confirms the exact venue when you book.`;
+
+const siblings = (allRecords||[]).filter(r => r.id !== record.id).map(r => {
+const rf = r.fields; const rName = (rf[F.NAME]||'').trim(); const rProvider = (rf[F.PROVIDER]||'').trim(); const rCounty = (rf[F.COUNTY]||'').trim();
+if (rProvider !== provider || !rName || !rCounty || (rf[F.SCHOOLS] && rf[F.SCHOOLS].length)) return null;
+const a1 = rf[F.AGE_MIN]||'', a2 = rf[F.AGE_MAX]||'';
+return { name: rName, url: `/${sectionForType(rf[F.TYPE])}/${makeCountySlug(rCounty)}/${makeSlug(rProvider, rName)}`, ages: a1 && a2 ? `ages ${a1}–${a2}` : '' };
+}).filter(Boolean);
+const ageKey = ageMin === '' ? '' : ageMin <= 2 ? '0-2' : ageMin <= 5 ? '3-5' : ageMin <= 8 ? '6-8' : ageMin <= 12 ? '9-12' : '13-99';
+const tt = timetableHTML(times);
+
+const pageData = { id: record.id, slug, name, provider, url: pageUrl, days, times, cost: costFirst, area: `${area}${county ? ', ' + county : ''}`,
+location: realLocation ? location.replace(/\n/g, ', ') : '', bookingUrl, dateStart, dateEnd };
+const pageJson = JSON.stringify(pageData).replace(/</g, '\\u003c');
+
+const bookBtn = bookingUrl
+? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-btn lp-btn--book bb" data-track="booking">${esc(bookLabel)} <i class="ti ti-external-link"></i></a>`
+: igHandle ? `<a href="${esc(instagram)}" target="_blank" rel="noopener" class="lp-btn lp-btn--book" data-track="booking"><i class="ti ti-brand-instagram"></i> Message ${esc(provShort)} to book</a>` : '';
+const calBtn = `<button type="button" class="lp-btn lp-btn--cal" data-lp="calendar"><i class="ti ti-calendar-plus"></i> Add to my calendar</button>`;
+const howBits = [];
+if (booking) howBits.push(esc(booking));
+else if (igHandle && bookingUrl) howBits.push(`Instagram: <a href="${esc(instagram)}" target="_blank" rel="noopener">@${esc(igHandle)}</a>`);
+
+return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-HHTB7S9WJG"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-HHTB7S9WJG');
+</script>
+<script src="/js/booking-tracking.js" defer></script>
+<script src="/js/newsletter-signup.js" defer></script>
+<script src="/js/account.js" defer></script>
+<script src="/js/saved.js" defer></script>
+<script src="/js/class-page.js" defer></script>
+<title>${esc(name)} — ${esc(area)}, ${esc(county)} | sortd</title>
+<meta name="description" content="${esc(metaDesc)}">
+<link rel="canonical" href="${pageUrl}">
+<meta property="og:title" content="${esc(name+' — '+area+' | sortd')}">
+<meta property="og:description" content="${esc(metaDesc)}">
+<meta property="og:url" content="${pageUrl}">
+<meta property="og:type" content="website">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SportsClub","name":"${escJson(name)}","description":"${escJson(descClean)}","url":"${pageUrl}","address":{"@type":"PostalAddress","addressLocality":"${escJson(area)}","addressRegion":"${escJson(county)}","addressCountry":"IE"}}<\/script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@400;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="/css/site.css">
+<link rel="stylesheet" href="/css/class-page.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body data-listing-id="${esc(record.id)}" data-listing-name="${esc(name)}" data-provider="${esc(provider)}" data-listing-type="class" style="--cat:${cat.colour};--cat-tint:${cat.tint};">
+${isMembersOnly ? '<div class="lp-mo-ribbon"><i class="ti ti-lock"></i> For existing members only</div>' : ''}
+${SITE_NAV}
+
+<nav class="lp-bc" aria-label="Breadcrumb">
+<div class="lp-bc-inner">
+<a href="/">sortd</a><span class="lp-sep">›</span>
+<a href="/weekly-classes">Classes</a><span class="lp-sep">›</span>
+<a href="/weekly-classes?q=${encodeURIComponent(area||county)}">${esc(area||county)}</a><span class="lp-sep">›</span>
+<span class="lp-cur">${esc(name)}</span>
+</div>
+</nav>
+
+<div class="cl-wrap">
+<main class="cl-page">
+
+<header class="cl-head">
+<div class="cl-eyebrow">Weekly class · ${esc(category)}</div>
+<h1>${esc(title)}</h1>
+<div class="cl-prov">${esc(provider)}${isNeurodivergent ? '<span class="cl-badge cl-badge--nd">Neurodivergent-friendly</span>' : ''}</div>
+<div class="cl-chips">
+<span class="cl-chip"><i class="ti ti-users"></i>${esc(agesDisplay)}</span>
+${daysShort ? `<span class="cl-chip"><i class="ti ti-calendar-event"></i>${esc(daysShort)}</span>` : ''}
+<span class="cl-chip"><i class="ti ti-map-pin"></i>${esc(area||county)}</span>
+</div>
+${isFullyBooked ? '<div class="cl-banner"><b>Full right now</b>Spaces sometimes open up during the term. Join the waitlist to be first in line.</div>' : ''}
+</header>
+
+<aside class="lp-act${bookBtn ? '' : ' lp-act--nobook'}" aria-label="Book or plan this class">
+<div class="lp-booked" id="lp-booked" hidden><b>Booked a place?</b>Add it to your calendar so you don't miss a week.<button type="button" id="lp-booked-x" aria-label="Dismiss">✕</button></div>
+<div class="lp-act-price${costFirst.length > 28 ? ' lp-act-price--long' : ''}">${esc(costFirst || 'Price on request')}</div>
+${costFirst ? '<div class="lp-act-sub">per child</div>' : ''}
+${bookBtn}
+${calBtn}
+<div class="lp-minor">
+<button type="button" class="lp-mini" data-save-id="${esc(record.id)}" aria-pressed="false" aria-label="Save for later"><i class="ti ti-heart h-off"></i><i class="ti ti-heart-filled h-on"></i> Save</button>
+<button type="button" class="lp-mini" data-lp="share"><i class="ti ti-share"></i> Share</button>
+</div>
+${howBits.length ? `<div class="lp-act-how">${howBits.join('<br>')}</div>` : ''}
+</aside>
+
+<div class="cl-body">
+${tt ? `<section class="cl-card"><h2>Timetable</h2>${tt}<p class="cl-note">Times are from ${esc(provider)}${bookingHostname ? ' (' + esc(bookingHostname) + ')' : ''}. Check with them before your first class.</p></section>` : ''}
+
+<section class="cl-card"><h2>About</h2><p class="cl-about">${esc(description)}</p>
+${costNote ? `<p class="cl-note">${esc(costNote).replace(/\n/g,'<br>')}</p>` : ''}</section>
+
+<section class="cl-card"><h2>Where</h2><div class="cl-where"><div>${whereHtml}</div>
+<a href="https://maps.google.com/?q=${mapsQ}" target="_blank" rel="noopener">Open in Google Maps <i class="ti ti-external-link"></i></a></div></section>
+
+${siblings.length ? `<section class="cl-card"><h2>More from ${esc(provider)}</h2><div class="cl-sib">${siblings.map(s => `<a href="${esc(s.url)}">${esc(s.name)}${s.ages ? `<span>${esc(s.ages)}</span>` : ''}</a>`).join('')}</div></section>` : ''}
+
+<div class="cl-explore" role="navigation" aria-label="Explore more classes">
+<a href="/weekly-classes?text=${encodeURIComponent(category)}">More ${esc(category.toLowerCase())} classes</a>
+<a href="/weekly-classes?q=${encodeURIComponent(area||county)}">Classes in ${esc(area||county)}</a>
+${ageKey ? `<a href="/weekly-classes?age=${ageKey}">Classes for ${esc(agesDisplay.toLowerCase())}</a>` : ''}
+</div>
+<p class="cl-src">Listed on Sortd from ${esc(provider)}'s own information. Confirm details with them before booking.</p>
+</div>
+
+</main>
+</div>
+
+<div class="lp-bar" aria-hidden="true">
+${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-btn lp-btn--book bb" data-track="booking" tabindex="-1">${esc(isFullyBooked ? 'Join waitlist' : 'Book')} <i class="ti ti-external-link"></i></a>` : ''}
+<button type="button" class="lp-btn lp-btn--cal" data-lp="calendar" tabindex="-1"${bookingUrl ? ' aria-label="Add to my calendar"' : ''}><i class="ti ti-calendar-plus"></i>${bookingUrl ? '' : ' Add to my calendar'}</button>
+</div>
+
+<script type="application/json" id="lp-data">${pageJson}</script>
+
+${SITE_FOOTER}
+</body>
+</html>`;
+}
+
 function generateHTML(record, allRecords) {
 const f = record.fields;
 const name = (f[F.NAME]||'').trim();
@@ -345,6 +659,7 @@ const weeks = Array.isArray(f[F.WEEKS])
 const countySlug = makeCountySlug(county||'ireland');
 const slug = makeSlug(provider, name);
 const section = sectionForType(f[F.TYPE]);
+if (section === 'classes') return generateClassHTML(record, allRecords);
 const listingType = section === 'classes' ? 'class' : 'camp';
 const pageUrl = `${BASE_URL}/${section}/${countySlug}/${slug}`;
 const cat = CATEGORY_CONFIG[category] || CATEGORY_CONFIG['default'];
@@ -460,6 +775,7 @@ gtag('config', 'G-HHTB7S9WJG');
 </script>
 <script src="/js/booking-tracking.js" defer></script>
 <script src="/js/newsletter-signup.js" defer></script>
+<script src="/js/account.js" defer></script>
 <title>${esc(name)} — ${esc(area)}, ${esc(county)} | sortd</title>
 <meta name="description" content="${esc(metaDesc)}">
 <link rel="canonical" href="${pageUrl}">
@@ -566,20 +882,7 @@ h1{font-weight:800;font-size:clamp(22px,3.5vw,36px);line-height:1.1;color:var(--
 </head>
 <body data-listing-id="${esc(record.id)}" data-listing-name="${esc(name)}" data-provider="${esc(provider)}" data-listing-type="${listingType}">
 ${membersOnlyRibbon}
-<nav>
-  <a href="/" class="brand">sortd<span>.</span></a>
-  <div class="navlinks">
-    <a href="/camps" class="navlink${section!=='classes'?' active':''}">Camps</a>
-    <a href="/weekly-classes" class="navlink${section==='classes'?' active':''}">Weekly classes</a>
-    <a href="/how-it-works" class="navlink">How it works</a>
-    <a href="/about" class="navlink">Our story</a>
-    <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener" class="navlink">Partners portal</a>
-  </div>
-  <div style="display:flex; align-items:center; gap:12px;">
-    <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener"><i class="ti ti-brand-instagram nav-icon"></i></a>
-    <a href="/newsletter" class="nav-cta">Get the newsletter</a>
-  </div>
-</nav>
+${SITE_NAV}
 
 <nav class="lp-bc" aria-label="Breadcrumb">
 <div class="lp-bc-inner">
@@ -680,90 +983,7 @@ ${ageKey ? `<a href="${hubPath}?age=${ageKey}" class="lp-explore-a"><i class="ti
 </div>
 </div>
 
-<footer>
-  <div class="foot-nl">
-    <div class="foot-nl-inner">
-      <div>
-        <div class="foot-nl-title">Get "what's on near you" every week</div>
-        <p class="foot-nl-sub">New camps, open spots and honest updates — straight to your inbox. No spam.</p>
-      </div>
-      <form class="foot-nl-form">
-        <input class="foot-nl-input" type="email" name="email" placeholder="your@email.ie" aria-label="Email address" required>
-        <button class="foot-nl-btn" type="submit">Join free</button>
-      </form>
-    </div>
-    <p class="foot-nl-msg" role="status" aria-live="polite"></p>
-  </div>
-  <div class="foot-top">
-    <div>
-      <div class="foot-logo">sortd</div>
-      <p class="foot-tag">Every kids' camp &amp; weekly class across Leinster, in one place. Built by a mum. For parents.</p>
-      <div class="foot-social">
-        <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener" aria-label="Instagram">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-        </a>
-        <a href="https://whatsapp.com/channel/0029Vb7sv3eInlqMyMfLFY01" target="_blank" rel="noopener" aria-label="WhatsApp">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        </a>
-      </div>
-    </div>
-    <div class="foot-col">
-      <div class="foot-heading">Browse</div>
-      <a href="/camps?q=Dublin">Dublin camps</a>
-      <a href="/camps?q=Wicklow">Wicklow camps</a>
-      <a href="/camps?q=Meath">Meath camps</a>
-      <a href="/camps">All camps</a>
-      <a href="/weekly-classes">All weekly classes</a>
-    </div>
-    <div class="foot-col">
-      <div class="foot-heading">Company</div>
-      <a href="/how-it-works">How it works</a>
-      <a href="/about">About</a>
-      <a href="mailto:sortd.ireland@gmail.com?subject=Camp%20recommendation">Recommend an activity</a>
-      <a href="mailto:sortd.ireland@gmail.com">Contact</a>
-    </div>
-    <div class="foot-col">
-      <div class="foot-heading">For providers</div>
-      <a href="/list">Add a class — free</a>
-      <a href="/claim">Claim your listing</a>
-      <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener">Partners portal</a>
-    </div>
-  </div>
-  <div class="foot-bottom">
-    <div>© 2026 Sortd Ireland · <a href="/privacy-policy">Privacy Policy</a></div>
-    <div class="foot-source">Sources: provider websites, WhatsApp screenshots, Instagram. Confirm details with each provider before booking.</div>
-  </div>
-</footer>
-<div class="popup-overlay" id="popupOverlay" role="dialog" aria-modal="true" aria-label="Get the Thursday email from sortd">
-<div class="popup">
-<button class="popup-close" onclick="closePopup()" aria-label="Close">&#10005;</button>
-<div class="popup-logo">sortd</div>
-<div class="popup-title">Get the Thursday email</div>
-<p class="popup-sub">New camps, open spots and honest updates, once a week. Free, and you can unsubscribe in one click.</p>
-<form class="popup-form">
-<input class="popup-input" type="email" name="email" placeholder="Your email address" required autocomplete="email" aria-label="Email address">
-<button class="popup-btn" type="submit">Get the Thursday email</button>
-</form>
-<div class="popup-msg" role="status"></div>
-</div>
-</div>
-<script>
-function openPopup() {
-  document.getElementById('popupOverlay').classList.add('show');
-  document.body.style.overflow = 'hidden';
-}
-function closePopup() {
-  document.getElementById('popupOverlay').classList.remove('show');
-  document.body.style.overflow = '';
-}
-document.getElementById('popupOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closePopup();
-});
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closePopup();
-});
-</script>
-
+${SITE_FOOTER}
 </body>
 </html>`;
 }
@@ -847,6 +1067,7 @@ gtag('config', 'G-HHTB7S9WJG');
 </script>
 <script src="/js/booking-tracking.js" defer></script>
 <script src="/js/newsletter-signup.js" defer></script>
+<script src="/js/account.js" defer></script>
 <title>${esc(schoolName)} — After-School Activities | sortd</title>
 <meta name="description" content="${esc(metaDesc)}">
 <link rel="canonical" href="${pageUrl}">
@@ -877,20 +1098,7 @@ gtag('config', 'G-HHTB7S9WJG');
 </head>
 <body data-school="${esc(schoolName)}">
 
-<nav>
-  <a href="/" class="brand">sortd<span>.</span></a>
-  <div class="navlinks">
-    <a href="/camps" class="navlink">Camps</a>
-    <a href="/weekly-classes" class="navlink">Weekly classes</a>
-    <a href="/how-it-works" class="navlink">How it works</a>
-    <a href="/about" class="navlink">Our story</a>
-    <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener" class="navlink">Partners portal</a>
-  </div>
-  <div style="display:flex; align-items:center; gap:12px;">
-    <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener"><i class="ti ti-brand-instagram nav-icon"></i></a>
-    <a href="/newsletter" class="nav-cta">Get the newsletter</a>
-  </div>
-</nav>
+${SITE_NAV}
 
 <div class="sch-hero">
 <div class="sch-badge"><i class="ti ti-lock"></i> Pupils only</div>
@@ -904,89 +1112,7 @@ ${cardsHtml}
 </div>
 </div>
 
-<footer>
-  <div class="foot-nl">
-    <div class="foot-nl-inner">
-      <div>
-        <div class="foot-nl-title">Get "what's on near you" every week</div>
-        <p class="foot-nl-sub">New camps, open spots and honest updates — straight to your inbox. No spam.</p>
-      </div>
-      <form class="foot-nl-form">
-        <input class="foot-nl-input" type="email" name="email" placeholder="your@email.ie" aria-label="Email address" required>
-        <button class="foot-nl-btn" type="submit">Join free</button>
-      </form>
-    </div>
-    <p class="foot-nl-msg" role="status" aria-live="polite"></p>
-  </div>
-  <div class="foot-top">
-    <div>
-      <div class="foot-logo">sortd</div>
-      <p class="foot-tag">Every kids' camp &amp; weekly class across Leinster, in one place. Built by a mum. For parents.</p>
-      <div class="foot-social">
-        <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener" aria-label="Instagram">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
-        </a>
-        <a href="https://whatsapp.com/channel/0029Vb7sv3eInlqMyMfLFY01" target="_blank" rel="noopener" aria-label="WhatsApp">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-        </a>
-      </div>
-    </div>
-    <div class="foot-col">
-      <div class="foot-heading">Browse</div>
-      <a href="/camps?q=Dublin">Dublin camps</a>
-      <a href="/camps?q=Wicklow">Wicklow camps</a>
-      <a href="/camps?q=Meath">Meath camps</a>
-      <a href="/camps">All camps</a>
-      <a href="/weekly-classes">All weekly classes</a>
-    </div>
-    <div class="foot-col">
-      <div class="foot-heading">Company</div>
-      <a href="/how-it-works">How it works</a>
-      <a href="/about">About</a>
-      <a href="mailto:sortd.ireland@gmail.com?subject=Camp%20recommendation">Recommend an activity</a>
-      <a href="mailto:sortd.ireland@gmail.com">Contact</a>
-    </div>
-    <div class="foot-col">
-      <div class="foot-heading">For providers</div>
-      <a href="/list">Add a class — free</a>
-      <a href="/claim">Claim your listing</a>
-      <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener">Partners portal</a>
-    </div>
-  </div>
-  <div class="foot-bottom">
-    <div>© 2026 Sortd Ireland · <a href="/privacy-policy">Privacy Policy</a></div>
-    <div class="foot-source">Sources: provider websites, WhatsApp screenshots, Instagram. Confirm details with each provider before booking.</div>
-  </div>
-</footer>
-<div class="popup-overlay" id="popupOverlay" role="dialog" aria-modal="true" aria-label="Get the Thursday email from sortd">
-<div class="popup">
-<button class="popup-close" onclick="closePopup()" aria-label="Close">&#10005;</button>
-<div class="popup-logo">sortd</div>
-<div class="popup-title">Get the Thursday email</div>
-<p class="popup-sub">New camps, open spots and honest updates, once a week. Free, and you can unsubscribe in one click.</p>
-<form class="popup-form">
-<input class="popup-input" type="email" name="email" placeholder="Your email address" required autocomplete="email" aria-label="Email address">
-<button class="popup-btn" type="submit">Get the Thursday email</button>
-</form>
-<div class="popup-msg" role="status"></div>
-</div>
-</div>
-<script>
-function openPopup() {
-  document.getElementById('popupOverlay').classList.add('show');
-  document.body.style.overflow = 'hidden';
-}
-function closePopup() {
-  document.getElementById('popupOverlay').classList.remove('show');
-  document.body.style.overflow = '';
-}
-document.getElementById('popupOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closePopup();
-});
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') closePopup();
-});
-</script>
+${SITE_FOOTER}
 
 </body>
 </html>`;
