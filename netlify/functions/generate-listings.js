@@ -511,7 +511,7 @@ const pageJson = JSON.stringify(pageData).replace(/</g, '\\u003c');
 const bookBtn = bookingUrl
 ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-btn lp-btn--book bb" data-track="booking">${esc(bookLabel)} <i class="ti ti-external-link"></i></a>`
 : igHandle ? `<a href="${esc(instagram)}" target="_blank" rel="noopener" class="lp-btn lp-btn--book" data-track="booking"><i class="ti ti-brand-instagram"></i> Message ${esc(provShort)} to book</a>` : '';
-const calBtn = `<button type="button" class="lp-btn lp-btn--cal" data-lp="calendar"><i class="ti ti-calendar-plus"></i> Add to my calendar</button>`;
+const calBtn = `<button type="button" class="lp-btn lp-btn--cal" data-lp="calendar"><i class="ti ti-calendar-plus"></i> Add to my Sortd calendar</button>`;
 const howBits = [];
 if (booking) howBits.push(esc(booking));
 else if (igHandle && bookingUrl) howBits.push(`Instagram: <a href="${esc(instagram)}" target="_blank" rel="noopener">@${esc(igHandle)}</a>`);
@@ -532,6 +532,7 @@ gtag('config', 'G-HHTB7S9WJG');
 <script src="/js/newsletter-signup.js" defer></script>
 <script src="/js/account.js" defer></script>
 <script src="/js/saved.js" defer></script>
+<script src="/js/school-year.js" defer></script>
 <script src="/js/class-page.js" defer></script>
 <title>${esc(name)} — ${esc(area)}, ${esc(county)} | sortd</title>
 <meta name="description" content="${esc(metaDesc)}">
@@ -578,7 +579,7 @@ ${isFullyBooked ? '<div class="cl-banner"><b>Full right now</b>Spaces sometimes 
 </header>
 
 <aside class="lp-act${bookBtn ? '' : ' lp-act--nobook'}" aria-label="Book or plan this class">
-<div class="lp-booked" id="lp-booked" hidden><b>Booked a place?</b>Add it to your calendar so you don't miss a week.<button type="button" id="lp-booked-x" aria-label="Dismiss">✕</button></div>
+<div class="lp-booked" id="lp-booked" hidden><b>Booked a place?</b>Add it to your Sortd calendar so you don't miss a week.<button type="button" id="lp-booked-x" aria-label="Dismiss">✕</button></div>
 <div class="lp-act-price${costFirst.length > 28 ? ' lp-act-price--long' : ''}">${esc(costFirst || 'Price on request')}</div>
 ${costFirst ? '<div class="lp-act-sub">per child</div>' : ''}
 ${bookBtn}
@@ -614,7 +615,7 @@ ${ageKey ? `<a href="/weekly-classes?age=${ageKey}">Classes for ${esc(agesDispla
 
 <div class="lp-bar" aria-hidden="true">
 ${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-btn lp-btn--book bb" data-track="booking" tabindex="-1">${esc(isFullyBooked ? 'Join waitlist' : 'Book')} <i class="ti ti-external-link"></i></a>` : ''}
-<button type="button" class="lp-btn lp-btn--cal" data-lp="calendar" tabindex="-1"${bookingUrl ? ' aria-label="Add to my calendar"' : ''}><i class="ti ti-calendar-plus"></i>${bookingUrl ? '' : ' Add to my calendar'}</button>
+<button type="button" class="lp-btn lp-btn--cal" data-lp="calendar" tabindex="-1"${bookingUrl ? ' aria-label="Add to my Sortd calendar"' : ''}><i class="ti ti-calendar-plus"></i>${bookingUrl ? '' : ' Add to my Sortd calendar'}</button>
 </div>
 
 <script type="application/json" id="lp-data">${pageJson}</script>
