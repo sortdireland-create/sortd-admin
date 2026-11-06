@@ -315,6 +315,7 @@ const SITE_NAV = `<nav>
   <a href="/" class="brand">sortd<span>.</span></a>
   <div class="navlinks">
     <a href="/find-an-activity" class="navlink">Find an activity</a>
+    <a href="/whats-on" class="navlink">What's on</a>
     <a href="/how-it-works" class="navlink">How it works</a>
     <a href="/about" class="navlink">Our story</a>
     <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener" class="navlink">Providers</a>
