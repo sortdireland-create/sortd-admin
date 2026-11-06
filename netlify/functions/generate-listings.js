@@ -682,10 +682,10 @@ const areaSlug = (area||'').toLowerCase().replace(/\s+/g,'-');
 const ageSlug = ageMin && ageMax ? `${ageMin}-${ageMax}` : '';
 const igHandle = instagram ? instagram.replace(/https?:\/\/(www\.)?instagram\.com\//,'').replace(/\/$/,'') : null;
 const mapsQ = encodeURIComponent(location.replace(/\n/g,', '));
-const waText = encodeURIComponent(`I found this camp on sortd.ie — thought you might be interested! ${pageUrl}`);
-const emailBody = encodeURIComponent(`I found this camp on sortd.ie — thought you might be interested!\n${pageUrl}`);
+const waText = encodeURIComponent(`I found this camp on sortd-ireland.ie — thought you might be interested! ${pageUrl}`);
+const emailBody = encodeURIComponent(`I found this camp on sortd-ireland.ie — thought you might be interested!\n${pageUrl}`);
 const locLines = location.split('\n').map(l=>l.trim()).filter(Boolean).map(l=>`${esc(l)}<br>`).join('');
-const sfx = `. ${category} camp in ${area}, ${county} for ages ${ageMin}–${ageMax}. Find and book on sortd.ie.`;
+const sfx = `. ${category} camp in ${area}, ${county} for ages ${ageMin}–${ageMax}. Find and book on sortd-ireland.ie.`;
 const descClean = description.replace(/\n/g,' ').trim();
 const metaDesc = (descClean.length > 155-sfx.length ? descClean.substring(0,155-sfx.length-1)+'…' : descClean) + sfx;
 const weeksHtml = weeks.length
