@@ -311,20 +311,20 @@ return records;
 // ============================================================
 // HTML GENERATOR
 // ============================================================
-// Shared site chrome, matching the homepage nav (5 Nov 2026) and footer.
+// Shared site chrome, matching the homepage nav (6 Nov 2026 nav redesign) and footer.
 const SITE_NAV = `<nav>
   <a href="/" class="brand">sortd<span>.</span></a>
   <div class="navlinks">
     <a href="/find-an-activity" class="navlink">Find an activity</a>
     <a href="/whats-on" class="navlink">What's on</a>
-    <a href="/how-it-works" class="navlink">How it works</a>
     <a href="/about" class="navlink">Our story</a>
-    <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener" class="navlink">Providers</a>
-    <a href="/login" class="navlink" id="nav-account-link">Parents</a>
+    <a href="/list" class="navlink">For providers</a>
   </div>
-  <div style="display:flex; align-items:center; gap:12px;">
+  <div class="nav-right">
     <a href="https://www.instagram.com/sortd.ireland/" target="_blank" rel="noopener" aria-label="Sortd on Instagram"><i class="ti ti-brand-instagram nav-icon"></i></a>
-    <a href="/newsletter" class="nav-cta">Get the newsletter</a>
+    <a href="/login" class="navlink nav-login" id="nav-account-link" data-smn-item>Log in</a>
+    <a href="/login" class="nav-cta-outline nav-signup" data-smn-cta>Sign up free</a>
+    <a href="/find-an-activity" class="nav-cta nav-cta-find">Find an activity</a>
   </div>
 </nav>`;
 const SITE_FOOTER = `<footer>
@@ -365,15 +365,17 @@ const SITE_FOOTER = `<footer>
     <div class="foot-col">
       <div class="foot-heading">Company</div>
       <a href="/how-it-works">How it works</a>
-      <a href="/about">About</a>
+      <a href="/guides">Monthly guides</a>
+      <a href="/about">Our story</a>
+      <a href="/newsletter">Newsletter</a>
       <a href="mailto:sortd.ireland@gmail.com?subject=Camp%20recommendation">Recommend an activity</a>
       <a href="mailto:sortd.ireland@gmail.com">Contact</a>
     </div>
     <div class="foot-col">
       <div class="foot-heading">For providers</div>
-      <a href="/list">Add a class — free</a>
+      <a href="/list">List your activity free</a>
       <a href="/claim">Claim your listing</a>
-      <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener">Partners portal</a>
+      <a href="https://portal.sortd-ireland.ie" target="_blank" rel="noopener">Provider login</a>
     </div>
   </div>
   <div class="foot-bottom">
