@@ -1201,6 +1201,8 @@ const AREA_ALIASES = {
 'dun laoghaire':'Dún Laoghaire','dún laoghaire':'Dún Laoghaire',
 'dublin 15':'Blanchardstown','corduff':'Blanchardstown',
 'porterstown':'Castleknock',
+'dublin city centre':'City Centre','ilac centre':'City Centre','north inner city':'City Centre',
+'fassaugh avenue':'Cabra','dublin 18':'Sandyford','rathfarnham village':'Rathfarnham','ongar village':'Ongar',
 };
 function slugifyPlace(s) {
 return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -1213,11 +1215,12 @@ let s = String(raw||'').trim();
 if (!s) return null;
 const fingal = s.match(/^fingal\s*\(\s*([^,)]+)/i);
 if (fingal) s = fingal[1];
-if (/\s&\s/.test(s)) return null;
+if (/\s&\s/.test(s) || /^multiple sites/i.test(s)) return null;
 let first = s.split(/[,(\/]/)[0].trim();
 if (!first) return null;
 const alias = AREA_ALIASES[first.toLowerCase()];
-const name = alias || first.replace(/\s+/g,' ');
+let name = alias || first.replace(/\s+/g,' ');
+if (name === name.toLowerCase()) name = name.replace(/\b\w/g, ch => ch.toUpperCase()); // "malahide" -> "Malahide
 let slug = slugifyPlace(name);
 if (!slug) return null;
 if (RESERVED_AREA_SLUGS.has(slug)) slug += '-area';
