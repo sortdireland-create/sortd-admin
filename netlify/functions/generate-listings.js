@@ -175,19 +175,57 @@ return { icon:'ti-star', colour:'#3D77A3', tint:'#CFE8F6' };
 const CATEGORY_CONFIG = new Proxy({}, { get: (_, cat) => categoryStyle(String(cat)) });
 // Static / hub pages not driven by Airtable records.
 // Add new hub/category/county pages here as they go live.
+// UPDATED 2026-11-06 (AI/search audit, step 2): removed five URLs that
+// pointed at pages which don't exist in sortd-site (/recommend,
+// /neurodivergent-camps-ireland and three /dublin/*/camps hubs whose
+// redirect targets were never built) and added the real search/browse
+// pages. Monthly guides are added automatically from data/guides-index.json
+// (see readRepoJson in the handler). Static pages carry no <lastmod> — this
+// function can't know when a hand-built page last changed, and a fake
+// "today" date on every run teaches crawlers to ignore the field.
 const STATIC_PAGES = [
 { path: '/', changefreq: 'daily', priority: '1.0' },
-{ path: '/about', changefreq: 'monthly', priority: '0.5' },
-{ path: '/newsletter', changefreq: 'monthly', priority: '0.6' },
+{ path: '/find-an-activity', changefreq: 'daily', priority: '0.9' },
+{ path: '/camps', changefreq: 'daily', priority: '0.9' },
+{ path: '/weekly-classes', changefreq: 'daily', priority: '0.9' },
 { path: '/whats-on', changefreq: 'weekly', priority: '0.8' },
+{ path: '/guides', changefreq: 'monthly', priority: '0.7' },
+{ path: '/about', changefreq: 'monthly', priority: '0.5' },
 { path: '/how-it-works', changefreq: 'monthly', priority: '0.5' },
-{ path: '/recommend', changefreq: 'monthly', priority: '0.4' },
+{ path: '/newsletter', changefreq: 'monthly', priority: '0.6' },
+{ path: '/list', changefreq: 'monthly', priority: '0.5' },
 { path: '/privacy-policy', changefreq: 'yearly', priority: '0.2' },
-{ path: '/neurodivergent-camps-ireland', changefreq: 'weekly', priority: '0.8' },
-{ path: '/dublin/northside/camps', changefreq: 'daily', priority: '0.9' },
-{ path: '/dublin/southdublin/camps', changefreq: 'daily', priority: '0.9' },
-{ path: '/dublin/citycentre/camps', changefreq: 'daily', priority: '0.9' },
 ];
+
+// Archived (finished) listings — added 2026-11-06, per Rachel: "archive old
+// listings, don't delete them". A listing whose end date has passed keeps
+// its page at the same URL, rebuilt with a "this has finished" banner and
+// no availability/next-date/booking claims, listed in /sitemap-archive.xml
+// instead of /sitemap.xml, and still kept out of search (camps-data.js).
+// The Airtable record is never touched (same principle as isExpiredCamp).
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDay(iso) {
+const [y, m, d] = iso.split('-').map(Number);
+return { d, m: MONTHS_SHORT[m-1], y };
+}
+// "13–17 Jul 2026", "28 Oct – 1 Nov 2026", "Summer 2026 (Week 3, Week 5)", or ''.
+function ranWhenText(f) {
+const ds = isoDate(f[F.DATE_START]);
+const de = isoDate(f[F.DATE_END]);
+if (ds && de) {
+const a = fmtDay(ds), b = fmtDay(de);
+if (ds === de) return `${a.d} ${a.m} ${a.y}`;
+if (a.y === b.y && a.m === b.m) return `${a.d}–${b.d} ${b.m} ${b.y}`;
+if (a.y === b.y) return `${a.d} ${a.m} – ${b.d} ${b.m} ${b.y}`;
+return `${a.d} ${a.m} ${a.y} – ${b.d} ${b.m} ${b.y}`;
+}
+if (de) { const b = fmtDay(de); return `until ${b.d} ${b.m} ${b.y}`; }
+const weeks = Array.isArray(f[F.WEEKS]) ? f[F.WEEKS].map(w => (w && typeof w === 'object') ? w.name : String(w||'')).filter(w => WEEK_DATES[w]) : [];
+if (weeks.length) return `summer 2026 (${weeks.map(w => `${w}: ${WEEK_DATES[w]}`).join(', ')})`;
+if (ds) { const a = fmtDay(ds); return `from ${a.d} ${a.m} ${a.y}`; }
+return '';
+}
+const todayIso = () => new Date().toISOString().slice(0, 10);
 
 const CAVEAT_NOTES = {
 'Tennis': 'all abilities welcome — just bring a racket ↗',
@@ -445,8 +483,10 @@ if (plain.length) html += `<ul class="cl-tt-plain${groups.length ? ' cl-tt-more'
 return html;
 }
 
-function generateClassHTML(record, allRecords) {
+function generateClassHTML(record, allRecords, opts = {}) {
 const f = record.fields;
+const archived = !!opts.archived;
+const ranWhen = archived ? ranWhenText(f) : '';
 const name = (f[F.NAME]||'').trim();
 const provider = (f[F.PROVIDER]||'').trim();
 const tags = (f[F.TAGS]||'').trim();
@@ -489,7 +529,7 @@ const igHandle = instagram ? instagram.replace(/https?:\/\/(www\.)?instagram\.co
 let bookingHostname = '';
 if (bookingUrl) { try { bookingHostname = new URL(bookingUrl).hostname.replace(/^www\./,''); } catch { bookingHostname = bookingUrl.replace(/https?:\/\/(www\.)?/,'').split('/')[0]; } }
 const provShort = provider.length > 24 ? 'provider' : provider;
-const bookLabel = isFullyBooked ? 'Join the waitlist' : `Book with ${provShort}`;
+const bookLabel = archived ? `See what's next at ${provShort}` : isFullyBooked ? 'Join the waitlist' : `Book with ${provShort}`;
 
 // Venues named in the timetable, e.g. "Mon (St. Nicholas Hall): ..."
 const venues = [];
@@ -503,7 +543,7 @@ const siblings = (allRecords||[]).filter(r => r.id !== record.id).map(r => {
 const rf = r.fields; const rName = (rf[F.NAME]||'').trim(); const rProvider = (rf[F.PROVIDER]||'').trim(); const rCounty = (rf[F.COUNTY]||'').trim();
 if (rProvider !== provider || !rName || !rCounty || (rf[F.SCHOOLS] && rf[F.SCHOOLS].length)) return null;
 const a1 = rf[F.AGE_MIN]||'', a2 = rf[F.AGE_MAX]||'';
-return { name: rName, url: `/${sectionForType(rf[F.TYPE])}/${makeCountySlug(rCounty)}/${makeSlug(rProvider, rName)}`, ages: a1 && a2 ? `ages ${a1}–${a2}` : '' };
+return { name: rName, url: `/${sectionForType(rf[F.TYPE])}/${makeCountySlug(rCounty)}/${makeSlug(rProvider, rName)}`, ages: a1 && a2 ? `ages ${a1}–${a2}` : '', done: isExpiredCamp(rf, todayIso()) };
 }).filter(Boolean);
 const ageKey = ageMin === '' ? '' : ageMin <= 2 ? '0-2' : ageMin <= 5 ? '3-5' : ageMin <= 8 ? '6-8' : ageMin <= 12 ? '9-12' : '13-99';
 const tt = timetableHTML(times);
@@ -515,7 +555,7 @@ const pageJson = JSON.stringify(pageData).replace(/</g, '\\u003c');
 const bookBtn = bookingUrl
 ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-btn lp-btn--book bb" data-track="booking">${esc(bookLabel)} <i class="ti ti-external-link"></i></a>`
 : igHandle ? `<a href="${esc(instagram)}" target="_blank" rel="noopener" class="lp-btn lp-btn--book" data-track="booking"><i class="ti ti-brand-instagram"></i> Message ${esc(provShort)} to book</a>` : '';
-const calBtn = `<button type="button" class="lp-btn lp-btn--cal" data-lp="calendar"><i class="ti ti-calendar-plus"></i> Add to my Sortd calendar</button>`;
+const calBtn = archived ? '' : `<button type="button" class="lp-btn lp-btn--cal" data-lp="calendar"><i class="ti ti-calendar-plus"></i> Add to my Sortd calendar</button>`;
 const howBits = [];
 if (booking) howBits.push(esc(booking));
 else if (igHandle && bookingUrl) howBits.push(`Instagram: <a href="${esc(instagram)}" target="_blank" rel="noopener">@${esc(igHandle)}</a>`);
@@ -579,7 +619,7 @@ ${SITE_NAV}
 ${daysShort ? `<span class="cl-chip"><i class="ti ti-calendar-event"></i>${esc(daysShort)}</span>` : ''}
 <span class="cl-chip"><i class="ti ti-map-pin"></i>${esc(area||county)}</span>
 </div>
-${isFullyBooked ? '<div class="cl-banner"><b>Full right now</b>Spaces sometimes open up during the term. Join the waitlist to be first in line.</div>' : ''}
+${archived ? `<div class="cl-banner" style="background:#fff;border-color:var(--bd);color:#3f4557;"><b style="color:var(--nv);">This class has finished</b>It ran ${ranWhen ? esc(ranWhen) : 'earlier this year'}. We've kept the details here for reference. Check with ${esc(provider)} for their next term, or browse classes running now.</div>` : isFullyBooked ? '<div class="cl-banner"><b>Full right now</b>Spaces sometimes open up during the term. Join the waitlist to be first in line.</div>' : ''}
 </header>
 
 <aside class="lp-act${bookBtn ? '' : ' lp-act--nobook'}" aria-label="Book or plan this class">
@@ -604,7 +644,7 @@ ${costNote ? `<p class="cl-note">${esc(costNote).replace(/\n/g,'<br>')}</p>` : '
 <section class="cl-card"><h2>Where</h2><div class="cl-where"><div>${whereHtml}</div>
 <a href="https://maps.google.com/?q=${mapsQ}" target="_blank" rel="noopener">Open in Google Maps <i class="ti ti-external-link"></i></a></div></section>
 
-${siblings.length ? `<section class="cl-card"><h2>More from ${esc(provider)}</h2><div class="cl-sib">${siblings.map(s => `<a href="${esc(s.url)}">${esc(s.name)}${s.ages ? `<span>${esc(s.ages)}</span>` : ''}</a>`).join('')}</div></section>` : ''}
+${siblings.length ? `<section class="cl-card"><h2>More from ${esc(provider)}</h2><div class="cl-sib">${siblings.map(s => `<a href="${esc(s.url)}">${esc(s.name)}${s.ages || s.done ? `<span>${[s.ages, s.done ? 'finished' : ''].filter(Boolean).map(esc).join(' · ')}</span>` : ''}</a>`).join('')}</div></section>` : ''}
 
 <div class="cl-explore" role="navigation" aria-label="Explore more classes">
 <a href="/weekly-classes?text=${encodeURIComponent(category)}">More ${esc(category.toLowerCase())} classes</a>
@@ -618,8 +658,8 @@ ${ageKey ? `<a href="/weekly-classes?age=${ageKey}">Classes for ${esc(agesDispla
 </div>
 
 <div class="lp-bar" aria-hidden="true">
-${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-btn lp-btn--book bb" data-track="booking" tabindex="-1">${esc(isFullyBooked ? 'Join waitlist' : 'Book')} <i class="ti ti-external-link"></i></a>` : ''}
-<button type="button" class="lp-btn lp-btn--cal" data-lp="calendar" tabindex="-1"${bookingUrl ? ' aria-label="Add to my Sortd calendar"' : ''}><i class="ti ti-calendar-plus"></i>${bookingUrl ? '' : ' Add to my Sortd calendar'}</button>
+${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-btn lp-btn--book bb" data-track="booking" tabindex="-1">${esc(archived ? `What's next at ${provShort}` : isFullyBooked ? 'Join waitlist' : 'Book')} <i class="ti ti-external-link"></i></a>` : ''}
+${archived ? '' : `<button type="button" class="lp-btn lp-btn--cal" data-lp="calendar" tabindex="-1"${bookingUrl ? ' aria-label="Add to my Sortd calendar"' : ''}><i class="ti ti-calendar-plus"></i>${bookingUrl ? '' : ' Add to my Sortd calendar'}</button>`}
 </div>
 
 <script type="application/json" id="lp-data">${pageJson}</script>
@@ -629,8 +669,9 @@ ${SITE_FOOTER}
 </html>`;
 }
 
-function generateHTML(record, allRecords) {
+function generateHTML(record, allRecords, opts = {}) {
 const f = record.fields;
+const archived = !!opts.archived;
 const name = (f[F.NAME]||'').trim();
 const provider = (f[F.PROVIDER]||'').trim();
 const tags = (f[F.TAGS]||'').trim();
@@ -664,7 +705,8 @@ const weeks = Array.isArray(f[F.WEEKS])
 const countySlug = makeCountySlug(county||'ireland');
 const slug = makeSlug(provider, name);
 const section = sectionForType(f[F.TYPE]);
-if (section === 'classes') return generateClassHTML(record, allRecords);
+if (section === 'classes') return generateClassHTML(record, allRecords, opts);
+const ranWhen = archived ? ranWhenText(f) : '';
 const listingType = section === 'classes' ? 'class' : 'camp';
 const pageUrl = `${BASE_URL}/${section}/${countySlug}/${slug}`;
 const cat = CATEGORY_CONFIG[category] || CATEGORY_CONFIG['default'];
@@ -707,8 +749,13 @@ const isNeurodivergent = /neurodivergent/i.test(tags);
 // Swaps the CTA to a waitlist link instead of hiding the page, so full
 // listings still rank and still convert waitlist signups.
 const isFullyBooked = availabilityOf(f) === 'Waitlist';
-const bookBtnLabel = isFullyBooked ? 'Join the waitlist ↗' : 'Book this camp ↗';
-const fullyBookedBanner = isFullyBooked ? `
+const bookBtnLabel = archived ? `Check ${provider.length > 24 ? 'the provider' : provider} for upcoming dates ↗` : isFullyBooked ? 'Join the waitlist ↗' : 'Book this camp ↗';
+const archivedBanner = archived ? `
+<div class="lp-fb-banner lp-done-banner">
+<div class="lp-fb-banner-t">This camp has finished</div>
+<p class="lp-fb-banner-p">It ran ${ranWhen ? esc(ranWhen) : 'earlier this year'}. We've kept the details here for reference. Check with ${esc(provider)} for their next dates, or browse camps coming up.</p>
+</div>` : '';
+const fullyBookedBanner = isFullyBooked && !archived ? `
 <div class="lp-fb-banner">
 <div class="lp-fb-banner-t">Fully booked right now</div>
 <p class="lp-fb-banner-p">This one is full, but spaces sometimes open up when families cancel. Join the waitlist to be first in line.</p>
@@ -740,11 +787,13 @@ const rSection = sectionForType(rf[F.TYPE]);
 const rAgeMin = rf[F.AGE_MIN]||'';
 const rAgeMax = rf[F.AGE_MAX]||'';
 const rFull = availabilityOf(rf) === 'Waitlist';
+const rDone = isExpiredCamp(rf, todayIso());
 return {
 name: rName,
 url: `/${rSection}/${rCountySlug}/${rSlug}`,
 ages: rAgeMin && rAgeMax ? `${rAgeMin}–${rAgeMax}` : '',
 full: rFull,
+done: rDone,
 };
 })
 .filter(Boolean);
@@ -753,7 +802,7 @@ const siblingsHtml = siblings.length ? `
 <div class="sc">
 <div class="sl">More from ${esc(provider)}</div>
 <div class="other-camps">
-${siblings.map(s => `<a href="${esc(s.url)}" class="camp-link">${esc(s.name)}${s.ages ? ` <span class="mu">(ages ${esc(s.ages)})</span>` : ''} ${s.full ? '<span class="full-tag">Waitlist</span>' : '<span class="avail">Places available ✓</span>'}</a>`).join('')}
+${siblings.map(s => `<a href="${esc(s.url)}" class="camp-link">${esc(s.name)}${s.ages ? ` <span class="mu">(ages ${esc(s.ages)})</span>` : ''} ${s.done ? '<span class="mu">Finished</span>' : s.full ? '<span class="full-tag">Waitlist</span>' : '<span class="avail">Places available ✓</span>'}</a>`).join('')}
 </div>
 </div>` : '';
 
@@ -878,6 +927,7 @@ h1{font-weight:800;font-size:clamp(22px,3.5vw,36px);line-height:1.1;color:var(--
 .lp-fb-banner{background:#FFF7E8;border:2px solid #D9971E;border-radius:16px;padding:20px 24px;margin-bottom:24px;}
 .lp-fb-banner-t{font-size:1.15rem;font-weight:800;color:#8a5f0f;margin-bottom:6px;}
 .lp-fb-banner-p{font-size:.92rem;color:#6b4a0c;line-height:1.6;margin:0;}
+.lp-done-banner{background:var(--pg);border-color:var(--bd);}.lp-done-banner .lp-fb-banner-t{color:var(--nv);}.lp-done-banner .lp-fb-banner-p{color:#3f4557;}
 .lp-mo-ribbon{background:var(--nv);color:#fff;text-align:center;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:.92rem;letter-spacing:.01em;padding:11px 16px;display:flex;align-items:center;justify-content:center;gap:8px;}
 .lp-mo-ribbon .ti{font-size:1.05rem;}
 .lp-sibling-link{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:12px 14px;background:var(--pg);border-radius:12px;text-decoration:none;color:var(--nv);font-weight:600;font-size:.88rem;margin-top:10px;}
@@ -919,10 +969,11 @@ ${isNeurodivergent ? `<div class="lp-badge-neuro">🧠 Neurodivergent-Friendly</
 <div class="lp-fact"><div class="lp-fact-l"><i class="ti ti-currency-euro"></i> Cost</div><div class="lp-fact-v">${esc(costFirst||'See provider')}</div></div>
 <div class="lp-fact"><div class="lp-fact-l"><i class="ti ti-map-pin"></i> Location</div><div class="lp-fact-v">${esc(area)}, ${esc(county)}</div></div>
 </div>
+${archivedBanner}
 ${fullyBookedBanner}
-${nextStart && !isFullyBooked ? `<div class="lp-startdate"><div><div class="lp-startdate-l">Next start date</div><div class="lp-startdate-d">${esc(nextStart)}</div></div><i class="ti ti-calendar-check"></i></div>` : ''}
-${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-cta bb" data-track="booking">${bookBtnLabel}</a>` : `<button class="lp-cta" disabled>Contact provider to book</button>`}
-<button class="lp-cta-ghost" disabled>Send enquiry — coming soon</button>
+${nextStart && !isFullyBooked && !archived ? `<div class="lp-startdate"><div><div class="lp-startdate-l">Next start date</div><div class="lp-startdate-d">${esc(nextStart)}</div></div><i class="ti ti-calendar-check"></i></div>` : ''}
+${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" class="lp-cta bb" data-track="booking">${bookBtnLabel}</a>` : archived ? '' : `<button class="lp-cta" disabled>Contact provider to book</button>`}
+${archived ? '' : '<button class="lp-cta-ghost" disabled>Send enquiry — coming soon</button>'}
 </div>
 
 <div class="lp-card">
@@ -931,7 +982,7 @@ ${bookingUrl ? `<a href="${esc(bookingUrl)}" target="_blank" rel="noopener" clas
 </div>
 
 <div class="lp-card">
-<div class="lp-card-l">Weeks available</div>
+<div class="lp-card-l">${archived ? 'When it ran' : 'Weeks available'}</div>
 <div class="lp-weeks">${weeksHtml}</div>
 </div>
 
@@ -972,7 +1023,7 @@ ${booking ? `<div class="lp-box-row"><div class="lp-box-l">How to book</div><div
 </div>
 </div>
 
-<div class="note" style="background:#fff;border:1px solid var(--bd);border-radius:20px;padding:20px 22px;margin-bottom:16px;color:${cat.colour};">${caveat}</div>
+<div class="note" style="background:#fff;border:1px solid var(--bd);border-radius:20px;padding:20px 22px;margin-bottom:16px;color:${cat.colour};">${archived ? 'finished for now — more camps coming up ↗' : caveat}</div>
 
 <div class="lp-explore">
 <div class="lp-explore-l">Explore more</div>
@@ -1233,6 +1284,22 @@ const header = Buffer.from(`blob ${buf.length}\0`, 'utf8');
 return crypto.createHash('sha1').update(Buffer.concat([header, buf])).digest('hex');
 }
 
+// Reads and parses a JSON file already committed in sortd-site, by its blob
+// sha from getCurrentTree. Used for the previous manifest.json (to carry
+// each page's lastmod forward) and data/guides-index.json (monthly guides
+// for the sitemap). Returns null on any failure — both callers treat that
+// as "no previous data" rather than failing the whole run.
+async function readRepoJson(token, sha) {
+if (!sha) return null;
+try {
+const blob = await githubApi(token, 'GET', `/repos/${GITHUB_OWNER}/${GITHUB_REPO}/git/blobs/${sha}`);
+return JSON.parse(Buffer.from(blob.content, blob.encoding || 'base64').toString('utf8'));
+} catch (e) {
+console.warn(`[generate-listings] readRepoJson ${sha} failed: ${e.message}`);
+return null;
+}
+}
+
 // Fetches the full current tree (path -> blob sha) for the branch, plus the
 // commit/tree shas needed to base a new commit on top of it.
 async function getCurrentTree(token) {
@@ -1344,6 +1411,7 @@ const records = await fetchAllLiveRecords(apiKey, body.county || null);
 
 const files = {};
 const manifest = [];
+const archivedManifest = []; // finished listings — see ranWhenText/archived mode
 const listings = [];
 const schoolMap = {};
 let skipped = 0;
@@ -1357,7 +1425,8 @@ const provider = (f[F.PROVIDER]||'').trim();
 const county = (f[F.COUNTY] ||'').trim();
 
 if (!name || !provider || !county) { skipped++; continue; }
-if (isExpiredCamp(f, todayStr)) { skippedExpired++; continue; }
+const expired = isExpiredCamp(f, todayStr);
+if (expired) skippedExpired++;
 
 const categoryRaw = f[F.CATEGORY];
 const category = categoryRaw && typeof categoryRaw === 'object' ? categoryRaw.name : (categoryRaw||'');
@@ -1372,6 +1441,7 @@ const schoolsArr = Array.isArray(f[F.SCHOOLS])
 // camps-data.js search-index entry, and no sitemap/manifest camp entry.
 // It exists purely as a card on its school's hub page, built below.
 if (schoolsArr.length) {
+if (expired) continue; // finished school activity: just drop it off the hub page
 const activity = {
 name,
 provider,
@@ -1396,8 +1466,16 @@ const section = sectionForType(f[F.TYPE]);
 const filePath = `/${section}/${countySlug}/${slug}.html`;
 const pageUrl = `${BASE_URL}/${section}/${countySlug}/${slug}`;
 
+// Finished listing: archive, don't drop. Same URL, rebuilt as an archived
+// page, listed in sitemap-archive.xml only, and kept out of search.
+if (expired) {
+files[filePath] = generateHTML(record, records, { archived: true });
+archivedManifest.push({ slug, county:countySlug, url:pageUrl, name, provider, section, archived: true, file: filePath });
+continue;
+}
+
 files[filePath] = generateHTML(record, records);
-manifest.push({ slug, county:countySlug, url:pageUrl, name, provider, section });
+manifest.push({ slug, county:countySlug, url:pageUrl, name, provider, section, file: filePath });
 
 // camps-data.js entry (search index) — field extraction mirrors
 // generateHTML's own, so the search index and the page it links to never
@@ -1444,7 +1522,7 @@ const schoolSlug = makeSchoolSlug(schoolName);
 const filePath = `/schools/${schoolSlug}.html`;
 const pageUrl = `${BASE_URL}/schools/${schoolSlug}`;
 files[filePath] = generateSchoolPageHTML(schoolName, schoolActivities);
-manifest.push({ slug: schoolSlug, county: null, provider: null, section: 'school', url: pageUrl, name: schoolName, listingCount: schoolActivities.length });
+manifest.push({ slug: schoolSlug, county: null, provider: null, section: 'school', url: pageUrl, name: schoolName, listingCount: schoolActivities.length, file: filePath });
 }
 
 // Added into `files` here (not after the changedPages check, unlike
@@ -1476,6 +1554,7 @@ success: true,
 generated: manifest.length,
 skipped,
 skippedExpired,
+archived: archivedManifest.length,
 changed: 0,
 elapsed: `${elapsedNoChange()}s`,
 pages: manifest.map(m => m.url.replace(BASE_URL, '')),
@@ -1484,24 +1563,46 @@ message: 'No page content changed since the last run — nothing committed.',
 };
 }
 
-// Full sitemap: static/hub pages + every live camp page.
-// Written to the conventional /sitemap.xml path so Search Console
-// and crawlers find it without any extra configuration.
-const today = new Date().toISOString().split('T')[0];
-const staticUrls = STATIC_PAGES.map(p =>
-` <url><loc>${BASE_URL}${p.path}</loc><lastmod>${today}</lastmod><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`
-);
-const campUrls = manifest.filter(m => m.section !== 'school').map(m =>
-` <url><loc>${m.url}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.7</priority></url>`
-);
+// Sitemaps (reworked 2026-11-06, AI/search audit step 2):
+// - /sitemap.xml: static pages, monthly guides, every live listing and
+//   school hub page.
+// - /sitemap-archive.xml: finished listings (archived pages), so crawlers
+//   can still find and cite past camps without mixing them in with what's
+//   bookable now.
+// - <lastmod> is real: a page keeps the lastmod recorded in the previous
+//   manifest.json while its generated content is unchanged, and only gets
+//   today's date when its content actually changed (or it's new). Before
+//   this, every URL got today's date on every run, which tells crawlers
+//   nothing.
+const today = todayStr;
+const prevManifest = await readRepoJson(githubToken, treeInfo.pathToSha['manifest.json']);
+const prevLastmod = {};
+if (Array.isArray(prevManifest)) for (const m of prevManifest) if (m && m.url && m.lastmod) prevLastmod[m.url] = m.lastmod;
+const stampLastmod = m => {
+const unchanged = m.file && treeInfo.pathToSha[m.file.replace(/^\//, '')] === gitBlobSha1(files[m.file]);
+m.lastmod = (unchanged && prevLastmod[m.url]) || today;
+delete m.file;
+return m;
+};
+manifest.forEach(stampLastmod);
+archivedManifest.forEach(stampLastmod);
+
+const urlTag = (loc, lastmod, changefreq, priority) =>
+` <url><loc>${loc}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ''}<changefreq>${changefreq}</changefreq><priority>${priority}</priority></url>`;
+const staticUrls = STATIC_PAGES.map(p => urlTag(`${BASE_URL}${p.path}`, null, p.changefreq, p.priority));
+const guidesIndex = await readRepoJson(githubToken, treeInfo.pathToSha['data/guides-index.json']);
+const guideUrls = (guidesIndex && Array.isArray(guidesIndex.guides) ? guidesIndex.guides : [])
+.filter(g => g && typeof g.guide === 'string' && g.guide.startsWith('/'))
+.map(g => urlTag(`${BASE_URL}${g.guide}`, null, 'monthly', '0.7'));
+const campUrls = manifest.filter(m => m.section !== 'school').map(m => urlTag(m.url, m.lastmod, 'weekly', '0.7'));
 // School hub pages get a slightly lower priority than a bookable listing —
 // they're a directory page, same tier as the static hub pages above.
-const schoolUrls = manifest.filter(m => m.section === 'school').map(m =>
-` <url><loc>${m.url}</loc><lastmod>${today}</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>`
-);
-const sitemap = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...staticUrls, ...campUrls, ...schoolUrls].join('\n')}\n</urlset>`;
-files['/sitemap.xml'] = sitemap;
-files['/manifest.json'] = JSON.stringify(manifest, null, 2);
+const schoolUrls = manifest.filter(m => m.section === 'school').map(m => urlTag(m.url, m.lastmod, 'weekly', '0.6'));
+const archiveUrls = archivedManifest.map(m => urlTag(m.url, m.lastmod, 'yearly', '0.3'));
+const urlset = urls => `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
+files['/sitemap.xml'] = urlset([...staticUrls, ...guideUrls, ...campUrls, ...schoolUrls]);
+files['/sitemap-archive.xml'] = urlset(archiveUrls);
+files['/manifest.json'] = JSON.stringify([...manifest, ...archivedManifest], null, 2);
 
 const changedSlugs = changedPages.map(([filePath]) => filePath).slice(0, 8);
 const commitMessage = `Auto-update ${changedPages.length} listing page(s) via generate-listings\n\n${changedSlugs.join('\n')}${changedPages.length > changedSlugs.length ? `\n…and ${changedPages.length - changedSlugs.length} more` : ''}`;
@@ -1517,6 +1618,7 @@ success: true,
 generated: manifest.length,
 skipped,
 skippedExpired,
+archived: archivedManifest.length,
 changed: commitResult ? commitResult.filesChanged.length : 0,
 commitSha: commitResult ? commitResult.commitSha : null,
 elapsed: `${elapsed}s`,
