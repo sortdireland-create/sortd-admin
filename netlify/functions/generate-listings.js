@@ -586,6 +586,7 @@ gtag('config', 'G-HHTB7S9WJG');
 <meta property="og:url" content="${pageUrl}">
 <meta property="og:type" content="website">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SportsClub","name":"${escJson(name)}","description":"${escJson(descClean)}","url":"${pageUrl}","address":{"@type":"PostalAddress","addressLocality":"${escJson(area)}","addressRegion":"${escJson(county)}","addressCountry":"IE"}}<\/script>
+${breadcrumbJsonLd(listingTrail(county, area, 'classes'), name, pageUrl)}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@400;600;700;800&family=Caveat:wght@600&display=swap" rel="stylesheet">
@@ -600,10 +601,7 @@ ${SITE_NAV}
 
 <nav class="lp-bc" aria-label="Breadcrumb">
 <div class="lp-bc-inner">
-<a href="/">sortd</a><span class="lp-sep">›</span>
-<a href="/weekly-classes">Classes</a><span class="lp-sep">›</span>
-<a href="/weekly-classes?q=${encodeURIComponent(area||county)}">${esc(area||county)}</a><span class="lp-sep">›</span>
-<span class="lp-cur">${esc(name)}</span>
+${trailHTML(listingTrail(county, area, 'classes'), name)}
 </div>
 </nav>
 
@@ -838,6 +836,7 @@ gtag('config', 'G-HHTB7S9WJG');
 <meta property="og:url" content="${pageUrl}">
 <meta property="og:type" content="website">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"SportsClub","name":"${escJson(name)}","description":"${escJson(descClean)}","url":"${pageUrl}","address":{"@type":"PostalAddress","addressLocality":"${escJson(area)}","addressRegion":"${escJson(county)}","addressCountry":"IE"}}<\/script>
+${breadcrumbJsonLd(listingTrail(county, area, section), name, pageUrl)}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@400;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
@@ -941,10 +940,7 @@ ${SITE_NAV}
 
 <nav class="lp-bc" aria-label="Breadcrumb">
 <div class="lp-bc-inner">
-<a href="/">sortd</a><span class="lp-sep">›</span>
-<a href="${hubPath}?q=${encodeURIComponent(county)}">${esc(category)} · ${esc(county)}</a><span class="lp-sep">›</span>
-<a href="${hubPath}?q=${encodeURIComponent(area)}">${esc(area)}</a><span class="lp-sep">›</span>
-<span class="lp-cur">${esc(name)}</span>
+${trailHTML(listingTrail(county, area, section), name)}
 </div>
 </nav>
 
@@ -1172,6 +1168,365 @@ ${SITE_FOOTER}
 
 </body>
 </html>`;
+}
+
+// ============================================================
+// AREA HUB PAGES (added 2026-11-06, AI/search audit step 3)
+//
+// Parents search geography-first ("classes in Malahide", "camps Swords"),
+// so every county and area with enough live listings gets a real,
+// crawlable page with the listings in the HTML (not filled in by JS):
+//
+//   /dublin/                    county hub: area directory + every listing
+//   /dublin/malahide/           area hub: every live listing in the area
+//   /dublin/malahide/camps/     only when the area has >= HUB_MIN camps AND
+//   /dublin/malahide/classes/   some of the other type (otherwise the area
+//                               hub IS that page and a copy would be thin)
+//
+// Folder + index.html, canonical with a trailing slash — the most reliable
+// pattern on Netlify. Individual listing URLs are unchanged on purpose
+// (stable URLs for citations); listing pages link up to their hubs via the
+// breadcrumb. Areas with fewer than HUB_MIN listings get no page of their
+// own (thin pages hurt the whole site) — they're listed on the county hub.
+//
+// The Airtable Area field is free text (85 spellings for ~60 places as of
+// 2026-11-06), so normaliseArea() maps it to a clean place name without
+// touching Airtable. Cleaning the field into a dropdown would make this
+// mapping mostly unnecessary.
+// ============================================================
+const HUB_MIN = 3;
+const RESERVED_AREA_SLUGS = new Set(['camps','classes','northside','southside','city']);
+const AREA_ALIASES = {
+'dublin 1':'City Centre','dublin 2':'City Centre','temple bar':'City Centre','dublin city':'City Centre',
+'dun laoghaire':'Dún Laoghaire','dún laoghaire':'Dún Laoghaire',
+'dublin 15':'Blanchardstown','corduff':'Blanchardstown',
+'porterstown':'Castleknock',
+};
+function slugifyPlace(s) {
+return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+}
+// "Clontarf, Dublin 3 (Dublin City)" -> Clontarf; "Fingal (Balbriggan)" ->
+// Balbriggan; "Stillorgan/Leopardstown, DLR" -> Stillorgan; a listing that
+// spans several places ("South Dublin & Dublin City (Tallaght, ...)") -> null.
+function normaliseArea(raw) {
+let s = String(raw||'').trim();
+if (!s) return null;
+const fingal = s.match(/^fingal\s*\(\s*([^,)]+)/i);
+if (fingal) s = fingal[1];
+if (/\s&\s/.test(s)) return null;
+let first = s.split(/[,(\/]/)[0].trim();
+if (!first) return null;
+const alias = AREA_ALIASES[first.toLowerCase()];
+const name = alias || first.replace(/\s+/g,' ');
+let slug = slugifyPlace(name);
+if (!slug) return null;
+if (RESERVED_AREA_SLUGS.has(slug)) slug += '-area';
+return { name, slug };
+}
+
+// Built once per run in the handler (buildHubIndex) and read by the listing
+// templates for their breadcrumbs, so a breadcrumb only ever links to a hub
+// page that this same run is generating.
+let HUB_INDEX = { counties: {} };
+function buildHubIndex(entries) {
+// entries: [{ county, area, type: 'camp'|'weekly' }] for live, non-school listings
+const idx = { counties: {} };
+for (const e of entries) {
+if (!e.county) continue;
+const cSlug = makeCountySlug(e.county);
+const c = idx.counties[cSlug] = idx.counties[cSlug] || { name: e.county, slug: cSlug, count: 0, areas: {} };
+c.count++;
+const a = normaliseArea(e.area);
+if (!a) continue;
+const area = c.areas[a.slug] = c.areas[a.slug] || { name: a.name, slug: a.slug, count: 0, camps: 0, classes: 0 };
+area.count++;
+if (e.type === 'weekly') area.classes++; else area.camps++;
+}
+for (const c of Object.values(idx.counties)) {
+c.hasHub = c.count >= HUB_MIN;
+for (const a of Object.values(c.areas)) {
+a.hasHub = c.hasHub && a.count >= HUB_MIN;
+a.hasCampsPage = a.hasHub && a.camps >= HUB_MIN && a.classes > 0;
+a.hasClassesPage = a.hasHub && a.classes >= HUB_MIN && a.camps > 0;
+}
+}
+return idx;
+}
+const countyHubPath = c => `/${c.slug}/`;
+const areaHubPath = (c, a) => `/${c.slug}/${a.slug}/`;
+
+// Breadcrumb trail for a listing page: sortd > County > Area > [Camps|Classes]
+// — each level only if its hub page exists. Returns [{name, path}].
+function listingTrail(county, rawArea, section) {
+const trail = [{ name: 'sortd', path: '/' }];
+const c = HUB_INDEX.counties[makeCountySlug(county||'')];
+if (!c || !c.hasHub) {
+trail.push(section === 'classes' ? { name: 'Classes', path: '/weekly-classes' } : { name: 'Camps', path: '/camps' });
+return trail;
+}
+trail.push({ name: c.name, path: countyHubPath(c) });
+const n = normaliseArea(rawArea);
+const a = n && c.areas[n.slug];
+if (a && a.hasHub) {
+trail.push({ name: a.name, path: areaHubPath(c, a) });
+if (section === 'classes' && a.hasClassesPage) trail.push({ name: 'Classes', path: `${areaHubPath(c, a)}classes/` });
+if (section !== 'classes' && a.hasCampsPage) trail.push({ name: 'Camps', path: `${areaHubPath(c, a)}camps/` });
+}
+return trail;
+}
+function trailHTML(trail, currentName) {
+return trail.map(t => `<a href="${esc(t.path)}">${esc(t.name)}</a><span class="lp-sep">›</span>`).join('\n') + `\n<span class="lp-cur">${esc(currentName)}</span>`;
+}
+function breadcrumbJsonLd(trail, currentName, currentUrl) {
+const items = trail.map((t, i) => ({ '@type': 'ListItem', position: i + 1, name: t.name, item: BASE_URL + t.path }));
+items.push({ '@type': 'ListItem', position: items.length + 1, name: currentName, item: currentUrl });
+return `<script type="application/ld+json">${JSON.stringify({ '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items }).replace(/</g,'\\u003c')}<\/script>`;
+}
+
+// Static version of js/search.js's listingCard() — same class names and
+// rotating pastel bands, so hub cards look identical to /camps results.
+const HUB_COLS = [{bg:'#CFE8F6',ink:'#3D77A3'},{bg:'#C9F0DA',ink:'#1D8A52'},{bg:'#E7E1F8',ink:'#5B4FCA'},{bg:'#FBE1EB',ink:'#C6567F'}];
+function hubCard(c, i, showType) {
+const col = HUB_COLS[i % HUB_COLS.length];
+const ageStr = c.ageMin!=null && c.ageMax!=null ? `Ages ${c.ageMin}–${c.ageMax}` : c.ageMin!=null ? `Ages ${c.ageMin}+` : '';
+const isWait = c.availability === 'Waitlist';
+const isLimited = c.availability === 'Limited spaces';
+const weeksStr = (c.weeks||[]).slice(0,2).join(', ');
+const first = (s, n) => String(s||'').split('\n')[0].substring(0, n);
+const clip = (s, n) => s.length <= n ? s : s.slice(0, n).replace(/\s+\S*$/, '') + '…';
+return `<div class="camp-card">
+<div class="card-img" style="background:${col.bg}"><div class="card-status ${isWait?'s-wait':isLimited?'s-limited':'s-open'}">${isWait?'WAITLIST':isLimited?'LIMITED SPACES':'LIVE NOW'}</div>
+<button class="card-save" data-save-id="${esc(c.id)}" aria-label="Save for later" aria-pressed="false" onclick="event.preventDefault();window.SortdSaved&&window.SortdSaved.toggle('${esc(c.id)}',this);"><i class="ti ti-heart"></i></button></div>
+<div class="card-body">
+${c.category?`<div class="card-cat" style="color:${col.ink}">${esc(c.category)}</div>`:''}
+<h3 class="card-name">${esc(c.name)}</h3>
+${c.provider && c.provider!==c.name?`<div class="card-prov">${esc(c.provider)}</div>`:''}
+<div class="card-meta">${showType?`<span class="cm cm-type">${c.type==='weekly'?'Class':'Camp'}</span>`:''}${ageStr?`<span class="cm">${esc(ageStr)}</span>`:''}${c.area?`<span class="cm">📍 ${esc(first(c.area, 40))}</span>`:''}${c.days?`<span class="cm">${esc(first(c.days,18))}</span>`:''}${c.times?`<span class="cm">${esc(first(c.times,20))}</span>`:''}${weeksStr?`<span class="cm">${esc(weeksStr)}</span>`:''}</div>
+${c.cost?`<div class="card-cost">${esc(clip(String(c.cost).split('\n')[0], 32))}</div>`:''}
+<a href="${esc(c.listingUrl)}" class="card-link">Find out more ↗</a>
+</div></div>`;
+}
+
+const DAY_NAMES = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+function joinList(xs) { return xs.length <= 1 ? (xs[0]||'') : `${xs.slice(0,-1).join(', ')} and ${xs[xs.length-1]}`; }
+// One- or two-sentence plain-English summary at the top of each hub — the
+// direct answer an AI assistant or a search snippet can quote.
+function hubSummary(items, placeLabel) {
+const camps = items.filter(i => i.type !== 'weekly').length;
+const classes = items.length - camps;
+const kinds = [classes ? `${classes} weekly ${classes===1?'class':'classes'}` : '', camps ? `${camps} holiday ${camps===1?'camp':'camps'}` : ''].filter(Boolean);
+const catCounts = {};
+for (const i of items) if (i.category) catCounts[i.category] = (catCounts[i.category]||0) + 1;
+const topCats = Object.entries(catCounts).sort((a,b) => b[1]-a[1] || a[0].localeCompare(b[0])).map(([c]) => c.toLowerCase());
+const cats = topCats.length > 4 ? `${topCats.slice(0,4).join(', ')} and more` : joinList(topCats);
+const mins = items.map(i => i.ageMin).filter(n => typeof n === 'number');
+const maxs = items.map(i => i.ageMax).filter(n => typeof n === 'number');
+const ages = mins.length && maxs.length ? ` for ages ${Math.min(...mins)} to ${Math.max(...maxs)}` : '';
+const days = DAY_NAMES.filter(d => items.some(i => new RegExp(d.slice(0,3), 'i').test(i.days||'')));
+const daysTxt = days.length >= 2 ? ` Activities run on ${days.length === 7 ? 'every day of the week' : joinList(days)}.` : '';
+return `Sortd lists ${joinList(kinds)} for children in ${placeLabel}${cats ? `, covering ${cats}` : ''}${ages}.${daysTxt} Every listing is checked by hand; confirm the details with the provider before booking.`;
+}
+function groupByCategory(items) {
+const groups = {};
+for (const i of items) (groups[i.category || 'Other'] = groups[i.category || 'Other'] || []).push(i);
+return Object.entries(groups).sort((a,b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+}
+const byName = (a, b) => a.name.localeCompare(b.name);
+
+function hubPageHTML({ title, h1, eyebrow, summary, canonicalPath, trail, bodyHtml, listingUrls, metaDesc }) {
+const pageUrl = BASE_URL + canonicalPath;
+const ld = {
+'@context': 'https://schema.org', '@type': 'CollectionPage', name: h1, description: metaDesc, url: pageUrl,
+isPartOf: { '@type': 'WebSite', name: 'sortd', url: BASE_URL },
+mainEntity: { '@type': 'ItemList', numberOfItems: listingUrls.length, itemListElement: listingUrls.map((u, i) => ({ '@type': 'ListItem', position: i + 1, url: BASE_URL + u })) },
+};
+return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-HHTB7S9WJG"></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-HHTB7S9WJG');
+</script>
+<script src="/js/booking-tracking.js" defer></script>
+<script src="/js/newsletter-signup.js" defer></script>
+<script src="/js/account.js" defer></script>
+<script src="/js/saved.js" defer></script>
+<title>${esc(title)}</title>
+<meta name="description" content="${esc(metaDesc)}">
+<link rel="canonical" href="${pageUrl}">
+<meta property="og:title" content="${esc(title)}">
+<meta property="og:description" content="${esc(metaDesc)}">
+<meta property="og:url" content="${pageUrl}">
+<meta property="og:type" content="website">
+<script type="application/ld+json">${JSON.stringify(ld).replace(/</g,'\\u003c')}<\/script>
+${breadcrumbJsonLd(trail, h1, pageUrl)}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@400;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+<link rel="stylesheet" href="/css/site.css">
+<style>
+/* Hub-page-only rules. Nav, footer, tokens and .camp-card come from /css/site.css. */
+.hub-bc{background:#fff;padding:11px 40px;border-bottom:1px solid var(--bd);font-size:12px;font-weight:700;color:#9aa0ad;}
+.hub-bc-inner{max-width:1180px;margin:0 auto;display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.hub-bc a{color:#9aa0ad;}.hub-bc a:hover{color:var(--nv);}.hub-bc .lp-sep{opacity:.5;}.hub-bc .lp-cur{color:var(--nv);}
+.hub-hero{background:#fff;border-bottom:1px solid var(--bd);padding:44px 40px 36px;}
+.hub-hero-inner{max-width:1180px;margin:0 auto;}
+.hub-eyebrow{font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--sk);margin-bottom:8px;}
+.hub-hero h1{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:clamp(26px,4vw,40px);line-height:1.1;color:var(--nv);margin:0 0 12px;}
+.hub-summary{font-size:1rem;line-height:1.65;color:#3f4557;max-width:760px;margin:0;}
+.hub-wrap{max-width:1260px;margin:0 auto;padding:32px 40px 56px;}
+.hub-chips{display:flex;flex-wrap:wrap;gap:8px;margin:18px 0 0;}
+.hub-chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--bd);border-radius:999px;padding:7px 14px;font-weight:700;font-size:.86rem;color:var(--nv);text-decoration:none;}
+.hub-chip:hover{border-color:var(--nv);}
+.hub-chip span{font-weight:600;color:#888;font-size:.8rem;}
+.hub-sec{margin-top:36px;}
+.hub-sec:first-child{margin-top:0;}
+.hub-sec h2{font-family:'Baloo 2',sans-serif;font-weight:800;font-size:1.45rem;color:var(--nv);margin:0 0 14px;}
+.hub-sec h2 small{font-family:'Nunito',sans-serif;font-weight:600;font-size:.9rem;color:#888;margin-left:6px;}
+.hub-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;}
+.hub-grid .card-name{margin:0;}
+.hub-list{list-style:none;padding:0;margin:0;columns:2 320px;column-gap:32px;}
+.hub-list li{break-inside:avoid;padding:7px 0;border-bottom:1px solid var(--bd);font-size:.92rem;line-height:1.45;color:#3f4557;}
+.hub-list li b{color:var(--nv);}
+.hub-list a{color:var(--sk);font-weight:700;text-decoration:none;}
+.hub-more{background:#fff;border:1px solid var(--bd);border-radius:20px;padding:22px 24px;display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;}
+.hub-more a{color:var(--sk);font-weight:700;text-decoration:none;}
+.hub-src{font-size:.82rem;color:#888;margin-top:28px;}
+@media(max-width:768px){.hub-bc{padding:10px 20px;}.hub-hero{padding:36px 20px 28px;}.hub-wrap{padding:24px 20px 44px;}}
+</style>
+</head>
+<body data-hub="${esc(canonicalPath)}">
+
+${SITE_NAV}
+
+<nav class="hub-bc" aria-label="Breadcrumb"><div class="hub-bc-inner">
+${trailHTML(trail, h1)}
+</div></nav>
+
+<header class="hub-hero"><div class="hub-hero-inner">
+<div class="hub-eyebrow">${esc(eyebrow)}</div>
+<h1>${esc(h1)}</h1>
+<p class="hub-summary">${esc(summary)}</p>
+</div></header>
+
+<main class="hub-wrap">
+${bodyHtml}
+<p class="hub-src">Listings come from each provider's own information and are checked by hand by Sortd. Confirm details with the provider before booking.</p>
+</main>
+
+${SITE_FOOTER}
+
+</body>
+</html>`;
+}
+
+function kindLabel(items) {
+const camps = items.some(i => i.type !== 'weekly'), classes = items.some(i => i.type === 'weekly');
+return camps && classes ? 'classes and camps' : camps ? 'camps' : 'classes';
+}
+
+// Returns { '/dublin/index.html': html, ... } plus manifest-style entries.
+function buildHubPages(listings) {
+const out = {}; const entries = [];
+for (const c of Object.values(HUB_INDEX.counties)) {
+if (!c.hasHub) continue;
+const inCounty = listings.filter(l => makeCountySlug(l.county||'') === c.slug).sort(byName);
+const areaItems = {}; const loose = {};
+for (const l of inCounty) {
+const n = normaliseArea(l.area);
+const a = n && c.areas[n.slug];
+if (a && a.hasHub) (areaItems[a.slug] = areaItems[a.slug] || []).push(l);
+else { const key = n ? n.name : `Across ${c.name}`; (loose[key] = loose[key] || []).push(l); }
+}
+const hubAreas = Object.values(c.areas).filter(a => a.hasHub).sort((a,b) => b.count - a.count || a.name.localeCompare(b.name));
+const areaChips = hubAreas.map(a => `<a class="hub-chip" href="${areaHubPath(c, a)}">${esc(a.name)} <span>${a.count}</span></a>`).join('\n');
+
+// ── Area hubs (and their camps/classes sub-pages) ──
+for (const a of hubAreas) {
+const items = areaItems[a.slug] || [];
+const place = `${a.name}, Co. ${c.name}`;
+const kinds = kindLabel(items);
+const otherAreas = hubAreas.filter(o => o.slug !== a.slug).map(o => `<a class="hub-chip" href="${areaHubPath(c, o)}">${esc(o.name)} <span>${o.count}</span></a>`).join('\n');
+const subLinks = [a.hasCampsPage ? `<a class="hub-chip" href="${areaHubPath(c, a)}camps/">Camps in ${esc(a.name)} <span>${a.camps}</span></a>` : '', a.hasClassesPage ? `<a class="hub-chip" href="${areaHubPath(c, a)}classes/">Classes in ${esc(a.name)} <span>${a.classes}</span></a>` : ''].join('');
+const mixed = items.some(i => i.type === 'weekly') && items.some(i => i.type !== 'weekly');
+let n = 0;
+const sections = groupByCategory(items).map(([cat, its]) => `<section class="hub-sec"><h2>${esc(cat)} in ${esc(a.name)}<small>${its.length}</small></h2><div class="hub-grid">${its.map(i => hubCard(i, n++, mixed)).join('\n')}</div></section>`).join('\n');
+const body = `${subLinks ? `<div class="hub-chips" style="margin:0 0 8px;">${subLinks}</div>` : ''}
+${sections}
+<section class="hub-sec"><h2>More in ${esc(c.name)}</h2>
+<div class="hub-more"><a href="${countyHubPath(c)}">Everything in ${esc(c.name)} →</a><a href="/whats-on">Days out &amp; what's on →</a><a href="/camps?q=${encodeURIComponent(a.name)}">Search camps near ${esc(a.name)} →</a><a href="/weekly-classes?q=${encodeURIComponent(a.name)}">Search classes near ${esc(a.name)} →</a></div>
+${otherAreas ? `<div class="hub-chips">${otherAreas}</div>` : ''}</section>`;
+const h1 = `Kids' ${kinds} in ${a.name}`;
+const summary = hubSummary(items, place);
+const path = areaHubPath(c, a);
+out[`${path}index.html`] = hubPageHTML({
+title: `${h1}, ${c.name} | sortd`, h1, eyebrow: `${c.name} · ${a.name}`, summary,
+metaDesc: summary.length > 158 ? summary.slice(0, 157) + '…' : summary,
+canonicalPath: path, trail: [{ name: 'sortd', path: '/' }, { name: c.name, path: countyHubPath(c) }],
+bodyHtml: body, listingUrls: items.map(i => i.listingUrl),
+});
+entries.push({ section: 'hub', name: h1, url: BASE_URL + path, file: `${path}index.html` });
+
+for (const [kind, flag, filter, word] of [['camps', a.hasCampsPage, i => i.type !== 'weekly', 'camps'], ['classes', a.hasClassesPage, i => i.type === 'weekly', 'classes']]) {
+if (!flag) continue;
+const sub = items.filter(filter);
+let m = 0;
+const subSections = groupByCategory(sub).map(([cat, its]) => `<section class="hub-sec"><h2>${esc(cat)} ${word} in ${esc(a.name)}<small>${its.length}</small></h2><div class="hub-grid">${its.map(i => hubCard(i, m++, false)).join('\n')}</div></section>`).join('\n');
+const subPath = `${path}${kind}/`;
+const subH1 = `Kids' ${word} in ${a.name}`;
+const subSummary = hubSummary(sub, place);
+out[`${subPath}index.html`] = hubPageHTML({
+title: `${subH1}, ${c.name} | sortd`, h1: subH1, eyebrow: `${c.name} · ${a.name} · ${kind === 'camps' ? 'Camps' : 'Classes'}`, summary: subSummary,
+metaDesc: subSummary.length > 158 ? subSummary.slice(0, 157) + '…' : subSummary,
+canonicalPath: subPath, trail: [{ name: 'sortd', path: '/' }, { name: c.name, path: countyHubPath(c) }, { name: a.name, path }],
+bodyHtml: `${subSections}<section class="hub-sec"><div class="hub-more"><a href="${path}">Everything in ${esc(a.name)} →</a><a href="${countyHubPath(c)}">Everything in ${esc(c.name)} →</a></div></section>`,
+listingUrls: sub.map(i => i.listingUrl),
+});
+entries.push({ section: 'hub', name: subH1, url: BASE_URL + subPath, file: `${subPath}index.html` });
+}
+}
+
+// ── County hub ──
+const areaSections = hubAreas.map(a => {
+const items = areaItems[a.slug] || [];
+return `<li><b><a href="${areaHubPath(c, a)}">${esc(a.name)}</a></b> — ${items.length} ${kindLabel(items)}: ${items.slice(0, 4).map(i => esc(i.name)).join(', ')}${items.length > 4 ? ', …' : ''}</li>`;
+}).join('\n');
+const looseKeys = Object.keys(loose).sort((x, y) => x.startsWith('Across') ? 1 : y.startsWith('Across') ? -1 : x.localeCompare(y));
+const looseList = looseKeys.map(k => loose[k].map(i => `<li><b>${esc(k)}</b> — <a href="${esc(i.listingUrl)}">${esc(i.name)}</a>${i.provider && i.provider !== i.name ? `, ${esc(i.provider)}` : ''}${i.ageMin != null && i.ageMax != null ? ` (ages ${i.ageMin}–${i.ageMax})` : ''}</li>`).join('\n')).join('\n');
+const cKinds = kindLabel(inCounty);
+const cH1 = `Kids' ${cKinds} in ${c.name}`;
+const cSummary = hubSummary(inCounty, `Co. ${c.name}`) .replace(' Every listing', ` ${hubAreas.length ? `Browse by area below, from ${joinList(hubAreas.slice(0, 3).map(a => a.name))} to ` : 'Browse '}every listing in the county. Every listing`);
+const cBody = `${hubAreas.length ? `<section class="hub-sec"><h2>Browse ${esc(c.name)} by area</h2><div class="hub-chips" style="margin:0 0 18px;">${areaChips}</div><ul class="hub-list">${areaSections}</ul></section>` : ''}
+${looseList ? `<section class="hub-sec"><h2>${hubAreas.length ? `More around ${esc(c.name)}` : `Everything in ${esc(c.name)}`}</h2><ul class="hub-list">${looseList}</ul></section>` : ''}
+<section class="hub-sec"><h2>Days out &amp; holiday plans</h2><div class="hub-more"><a href="/whats-on">What's on for kids this month →</a><a href="/guides">Monthly guides →</a><a href="/camps">All holiday camps →</a><a href="/weekly-classes">All weekly classes →</a></div></section>`;
+out[`${countyHubPath(c)}index.html`] = hubPageHTML({
+title: `${cH1} by area | sortd`, h1: cH1, eyebrow: `Co. ${c.name}`, summary: cSummary,
+metaDesc: cSummary.length > 158 ? cSummary.slice(0, 157) + '…' : cSummary,
+canonicalPath: countyHubPath(c), trail: [{ name: 'sortd', path: '/' }],
+bodyHtml: cBody, listingUrls: inCounty.map(i => i.listingUrl),
+});
+entries.push({ section: 'hub', name: cH1, url: BASE_URL + countyHubPath(c), file: `${countyHubPath(c)}index.html` });
+}
+return { files: out, entries };
+}
+
+// js/areas-data.js — consumed by the homepage's "Browse by area" chips.
+// Content-only (no timestamp) so it joins the changed-vs-unchanged diff.
+function buildAreasDataJs() {
+const hubs = [];
+for (const c of Object.values(HUB_INDEX.counties)) {
+if (!c.hasHub) continue;
+const areas = Object.values(c.areas).filter(a => a.hasHub).sort((a,b) => b.count - a.count || a.name.localeCompare(b.name))
+.map(a => ({ name: a.name, url: areaHubPath(c, a), count: a.count }));
+hubs.push({ county: c.name, url: countyHubPath(c), count: c.count, areas });
+}
+return `// Auto-generated by generate-listings.js — area hub pages for the homepage.\n// Do not hand-edit; change listings in Airtable instead.\nconst AREA_HUBS = ${JSON.stringify(hubs)};\n`;
 }
 
 // ============================================================
@@ -1418,6 +1773,16 @@ let skipped = 0;
 let skippedExpired = 0;
 const todayStr = new Date().toISOString().slice(0, 10);
 
+// Pre-pass: which county/area hub pages exist this run (live, non-school
+// listings only), so listing breadcrumbs can link to them — see AREA HUB PAGES.
+HUB_INDEX = buildHubIndex(records.map(r => r.fields).filter(f =>
+(f[F.NAME]||'').trim() && (f[F.PROVIDER]||'').trim() && (f[F.COUNTY]||'').trim()
+&& !isExpiredCamp(f, todayStr) && !(Array.isArray(f[F.SCHOOLS]) && f[F.SCHOOLS].length)
+).map(f => {
+const t = f[F.TYPE]; const tn = t && typeof t === 'object' ? t.name : (t||'');
+return { county: (f[F.COUNTY]||'').trim(), area: (f[F.AREA]||'').trim(), type: tn === 'Weekly Class' ? 'weekly' : 'camp' };
+}));
+
 for (const record of records) {
 const f = record.fields;
 const name = (f[F.NAME] ||'').trim();
@@ -1532,6 +1897,11 @@ manifest.push({ slug: schoolSlug, county: null, provider: null, section: 'school
 // change (e.g. CostValue edited without touching any field a page renders)
 // still triggers a real commit instead of being silently skipped.
 files['/js/camps-data.js'] = buildCampsDataJs(listings);
+// County/area hub pages + the homepage's area-chip data (AREA HUB PAGES).
+const hubBuild = buildHubPages(listings);
+Object.assign(files, Object.fromEntries(Object.entries(hubBuild.files).map(([p, html]) => [p, html])));
+manifest.push(...hubBuild.entries);
+files['/js/areas-data.js'] = buildAreasDataJs();
 files['/js/schools-data.js'] = buildSchoolsDataJs(schoolMap);
 
 // Diff against what's currently committed BEFORE deciding whether to touch
@@ -1594,13 +1964,14 @@ const guidesIndex = await readRepoJson(githubToken, treeInfo.pathToSha['data/gui
 const guideUrls = (guidesIndex && Array.isArray(guidesIndex.guides) ? guidesIndex.guides : [])
 .filter(g => g && typeof g.guide === 'string' && g.guide.startsWith('/'))
 .map(g => urlTag(`${BASE_URL}${g.guide}`, null, 'monthly', '0.7'));
-const campUrls = manifest.filter(m => m.section !== 'school').map(m => urlTag(m.url, m.lastmod, 'weekly', '0.7'));
+const hubUrls = manifest.filter(m => m.section === 'hub').map(m => urlTag(m.url, m.lastmod, 'daily', '0.8'));
+const campUrls = manifest.filter(m => m.section !== 'school' && m.section !== 'hub').map(m => urlTag(m.url, m.lastmod, 'weekly', '0.7'));
 // School hub pages get a slightly lower priority than a bookable listing —
 // they're a directory page, same tier as the static hub pages above.
 const schoolUrls = manifest.filter(m => m.section === 'school').map(m => urlTag(m.url, m.lastmod, 'weekly', '0.6'));
 const archiveUrls = archivedManifest.map(m => urlTag(m.url, m.lastmod, 'yearly', '0.3'));
 const urlset = urls => `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`;
-files['/sitemap.xml'] = urlset([...staticUrls, ...guideUrls, ...campUrls, ...schoolUrls]);
+files['/sitemap.xml'] = urlset([...staticUrls, ...guideUrls, ...hubUrls, ...campUrls, ...schoolUrls]);
 files['/sitemap-archive.xml'] = urlset(archiveUrls);
 files['/manifest.json'] = JSON.stringify([...manifest, ...archivedManifest], null, 2);
 
