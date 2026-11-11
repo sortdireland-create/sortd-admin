@@ -20,7 +20,7 @@ const T = {
 
 // Fields the page may write on a post. Anything else is ignored.
 const POST_FIELDS = new Set([
-  'Title', 'Date', 'Status', 'Hook', 'Brief', 'Shot list', 'Caption', 'Hashtags',
+  'Title', 'Date', 'Status', 'Hook', 'Brief', 'Shot list', 'B-roll needed', 'Caption', 'Hashtags',
   'Alt text', 'Ends on', 'Checks', 'Post link', 'Results', 'Film day',
   'Account', 'Kind', 'Pillar', 'Week',
 ]);

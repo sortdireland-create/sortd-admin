@@ -101,7 +101,7 @@ var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'
 var PN = {AI:'THE AI STACK', WN:'WORKING NOTES', BP:'THE BRAND PLAYBOOK', ST:'START HERE'};
 var PILLAR_KEY = {'THE AI STACK':'AI','WORKING NOTES':'WN','THE BRAND PLAYBOOK':'BP','START HERE':'ST'};
 var STEPS = ['Idea','Planned','Scripted','Filmed','Edited','Ready','Posted'];
-var EDITABLE = ['Hook','Brief','Shot list','Caption','Hashtags','Alt text','Ends on','Checks'];
+var EDITABLE = ['Hook','Brief','Shot list','B-roll needed','Caption','Hashtags','Alt text','Ends on','Checks'];
 
 var store = {
   get: function(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
@@ -351,7 +351,7 @@ function renderDetail(){
     '<div class="bd" style="font-size:19px;margin-top:6px">' + esc(i.title) + '</div>' +
     '<div class="row" style="margin-top:10px">' + steps.map(function(s){ return '<button class="pill' + (i.status === s ? ' on' : '') + '" data-st="' + s + '">' + s + '</button>'; }).join('') + '</div>' +
     '<div class="row" style="margin-top:10px"><span class="meta">Posts</span><input type="date" id="pdate" value="' + esc(i.date || '') + '" style="width:auto"><span class="meta">Film</span><input type="date" id="pfilm" value="' + esc(i.film || '') + '" style="width:auto"><button class="btn" id="dsave">Save dates</button></div>' +
-    sec('Hook', true) + sec('Brief', false) + sec('Shot list', false) + sec('Caption', true) + sec('Hashtags', true) + sec('Alt text', true) + sec('Ends on', false) + sec('Checks', false) +
+    sec('Hook', true) + sec('Brief', false) + sec('Shot list', false) + sec('B-roll needed', false) + sec('Caption', true) + sec('Hashtags', true) + sec('Alt text', true) + sec('Ends on', false) + sec('Checks', false) +
     (missing.length ? '<div class="row" style="margin-top:12px"><span class="meta">Add</span>' + missing.map(function(n){ return '<button class="btn" data-edit="' + n + '">' + n + '</button>'; }).join('') + '</div>' : '') +
     (i.kind !== 'Task' ? '<div class="lab" style="margin-top:14px">After posting</div><input type="url" id="plink" placeholder="Paste the post link" value="' + esc(i.link) + '" style="margin-top:4px"><textarea id="presults" placeholder="Results: saves, sends, profile visits, follows" style="min-height:70px;margin-top:6px">' + esc(p.Results || '') + '</textarea><button class="btn red" id="psave" style="margin-top:6px">Save and mark posted</button>' : '') +
     '</div>';
