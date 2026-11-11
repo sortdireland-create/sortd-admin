@@ -27,6 +27,28 @@ button{font-family:inherit;cursor:pointer}
 .btn:disabled{opacity:.5}
 .tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;margin-top:14px}
 .tabs .pill{white-space:nowrap}
+.nav{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:14px}
+.nav button{font-size:14px;font-weight:600;padding:11px 6px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--navy);line-height:1.2}
+.nav button .n{display:block;font-size:11px;font-weight:500;color:var(--slate);margin-top:2px}
+.nav button.on{background:var(--navy);color:var(--butter);border-color:var(--navy)}
+.nav button.on .n{color:var(--lilac)}
+.nav button[data-v=AI].on{background:var(--navy);color:var(--butter)}
+.nav button[data-v=BP].on{background:var(--lilac);color:var(--navy);border-color:var(--navy)}
+.nav button[data-v=BP].on .n,.nav button[data-v=WN].on .n,.nav button[data-v=broll].on .n{color:var(--slate)}
+.nav button[data-v=WN].on{background:var(--butter);color:var(--navy);border-color:var(--navy)}
+.nav button[data-v=broll].on{background:var(--butter);color:var(--navy);border-color:var(--navy)}
+.sub{display:flex;gap:16px;margin-top:10px;font-size:13px}
+.sub button{background:none;border:0;padding:4px 0;color:var(--slate);font-size:13px;font-weight:500}
+.sub button.on{color:var(--navy);font-weight:700;box-shadow:inset 0 -2px 0 var(--navy)}
+.li-row{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px;margin-top:6px;color:var(--navy);font-size:14px}
+.li-row.sel{box-shadow:0 0 0 2px var(--navy)}
+.li-row .dt{flex:none;width:58px;font-size:12px;font-weight:600;color:var(--slate)}
+.li-row .hk{font-size:13px;color:var(--slate);margin-top:2px}
+.tag{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border-radius:4px;padding:1px 6px;background:var(--soft);color:var(--slate);margin-left:4px}
+.tag.posted{background:var(--navy);color:var(--butter)}
+.script{background:#fff;border-radius:12px;padding:14px;margin-top:10px;border-left:6px solid var(--line)}
+.script.AIb{border-left-color:var(--navy)}.script.BPb{border-left-color:var(--lilac)}.script.WNb{border-left-color:#F0DE9A}
+@media (max-width:760px){.nav{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:14px}
 .col{background:var(--soft);border-radius:10px;padding:7px;min-height:140px}
 .col.shoot{box-shadow:inset 0 0 0 1.5px var(--navy)}
@@ -94,9 +116,9 @@ table.ov td{padding:8px 4px;border-top:1px solid var(--line);vertical-align:top}
     <span class="bd" style="font-size:22px">Content calendar</span>
     <div class="row"><button class="btn" id="refresh">Refresh</button><button class="btn" id="logout">Log out</button></div>
   </div>
-  <div class="row tabs" id="tabs"></div>
+  <div class="nav" id="tabs"></div>
+  <div class="sub" id="subnav"></div>
   <div class="row between" style="margin-top:10px" id="wkbar"></div>
-  <div class="row tabs" style="margin-top:8px" id="filters"></div>
   <div id="main"></div>
   <div id="detail"></div>
 </div>
@@ -119,7 +141,7 @@ var store = {
 };
 var pw = store.get('cc_pw') || '';
 var DATA = {posts:[], broll:[], notes:[], suggestions:[], today: null};
-var st = {view:'week', w:1, f:'all', sel:null, bf:'todo', editing:null, shots: JSON.parse(store.get('cc_shots') || '{}')};
+var st = {view:'cal', cal:'week', w:1, sf:'todo', sg:'post', sel:null, bf:'todo', editing:null, shots: JSON.parse(store.get('cc_shots') || '{}')};
 
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -181,20 +203,19 @@ function cls(i){
   return i.series || 'TASK';
 }
 function plabel(i){ if (i.series === 'WN' && i.no) return 'WORKING NOTES · No. ' + ('0' + i.no).slice(-2); return PN[i.series] || ''; }
-function match(i){
-  var f = st.f;
-  if (f === 'all') return true;
-  if (f === 'f2c') return isF2C(i);
-  if (PN[f]) return i.acc === 'rach' && i.series === f;
-  if (f === 'auto') return i.acc === 'auto';
-  if (f === 'task') return i.acc === 'task' || i.acc === 'review';
-  if (f === 'li') return i.acc === 'li' || i.acc === 'wn';
-  return i.acc === f;
-}
 
 // ---------- rendering ----------
-var VIEWS = [['week','Week'],['shoot','Shoot day'],['broll','B-roll'],['ov','12 weeks'],['ideas','Ideas'],['notes','Sunday notes'],['sug','Suggestions']];
-var FILTERS = [['all','All'],['rach','@rach.hannon'],['AI','AI Stack'],['WN','Working Notes'],['BP','Brand Playbook'],['f2c','Face to camera'],['sortd','Sortd'],['auto','Automations'],['li','LinkedIn + Substack'],['task','Tasks']];
+var MAIN = [['cal','Calendar'],['AI','AI Stack'],['WN','Working Notes'],['BP','Brand Playbook'],['broll','B-roll'],['scripts','Scripts']];
+var MORE = [['ideas','Ideas'],['notes','Sunday notes'],['sug','Suggestions']];
+var FILMED = ['Filmed','Edited','Ready','Posted'];
+
+function pillarPosts(k){ return scheduled().filter(function(i){ return i.acc === 'rach' && i.series === k; }).sort(function(a, b){ return a.date < b.date ? -1 : 1; }); }
+function scriptPosts(){
+  return scheduled().filter(function(i){ return i.shots && i.acc !== 'task'; })
+    .filter(function(i){ var f = FILMED.indexOf(i.status) >= 0; return st.sf === 'all' ? true : st.sf === 'done' ? f : !f; })
+    .sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+}
+function toFilm(){ return scheduled().filter(function(i){ return i.shots && i.acc !== 'task' && FILMED.indexOf(i.status) < 0; }).length; }
 
 function card(i){
   var kindTxt = (i.status === 'Idea' && !i.raw.Kind) ? '' : ' · ' + esc(i.kind);
@@ -204,28 +225,81 @@ function card(i){
   return '<button class="c ' + cls(i) + (st.sel === i.id ? ' sel' : '') + dn + '" data-id="' + esc(i.id) + '">' + f2 + pre + esc(i.title) + '</button>';
 }
 
+function pl(n){ return n + (n === 1 ? ' post' : ' posts'); }
 function render(){
   var pending = DATA.suggestions.filter(function(s){ return (s.Status || 'Pending') === 'Pending' && s.Type !== 'Weekly summary'; }).length;
   var toGet = DATA.broll.filter(function(b){ return !b['Got it']; }).length;
-  $('tabs').innerHTML = VIEWS.map(function(v){
-    var n = v[0] === 'sug' ? ' · ' + pending : v[0] === 'broll' ? ' · ' + toGet : v[0] === 'ideas' ? ' · ' + ideas().length : '';
-    return '<button class="pill' + (st.view === v[0] ? ' on' : '') + '" data-v="' + v[0] + '">' + v[1] + n + '</button>';
-  }).join('');
-  var wk = st.view === 'week' || st.view === 'shoot';
+  var n = {cal: 'Week ' + st.w, AI: pl(pillarPosts('AI').length), WN: pl(pillarPosts('WN').length), BP: pl(pillarPosts('BP').length), broll: toGet + ' to get', scripts: toFilm() + ' to film'};
+  $('tabs').innerHTML = MAIN.map(function(v){ return '<button class="' + (st.view === v[0] ? 'on' : '') + '" data-v="' + v[0] + '">' + v[1] + '<span class="n">' + n[v[0]] + '</span></button>'; }).join('');
+  var m = {ideas: ideas().length, sug: pending};
+  $('subnav').innerHTML = MORE.map(function(v){ return '<button class="' + (st.view === v[0] ? 'on' : '') + '" data-v="' + v[0] + '">' + v[1] + (m[v[0]] ? ' · ' + m[v[0]] : '') + '</button>'; }).join('');
   var ws = wkStart(st.w), we = add(ws, 6);
-  $('wkbar').innerHTML = wk ? '<span class="lab">Week ' + st.w + ' · ' + short(ws) + ' – ' + short(we) + '</span><div class="row"><button class="btn" data-n="-1">‹ Prev</button><button class="btn" data-n="0">This week</button><button class="btn" data-n="1">Next ›</button></div>' : '';
-  $('filters').innerHTML = st.view === 'week' ? FILTERS.map(function(f){ return '<button class="pill' + (st.f === f[0] ? ' on' : '') + '" data-f="' + f[0] + '">' + f[1] + '</button>'; }).join('') : '';
-  var fn = {week:renderWeek, shoot:renderShoot, broll:renderBroll, ov:renderOverview, ideas:renderIdeas, notes:renderNotes, sug:renderSug}[st.view];
+  $('wkbar').innerHTML = st.view === 'cal' ? '<div class="row">' + [['week','Week'],['ov','All 12 weeks']].map(function(x){ return '<button class="pill' + (st.cal === x[0] ? ' on' : '') + '" data-cal="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+    (st.cal === 'week' ? '<div class="row"><span class="lab" style="margin-right:6px">' + short(ws) + ' – ' + short(we) + '</span><button class="btn" data-n="-1">‹</button><button class="btn" data-n="0">Today</button><button class="btn" data-n="1">›</button></div>' : '') : '';
+  var fn = {cal: st.cal === 'week' ? renderWeek : renderOverview, AI:renderPillar, WN:renderPillar, BP:renderPillar, broll:renderBroll, scripts:renderScripts, ideas:renderIdeas, notes:renderNotes, sug:renderSug}[st.view];
   $('main').innerHTML = fn();
   renderDetail();
+}
+
+function renderPillar(){
+  var k = st.view, list = pillarPosts(k), ids = ideas().filter(function(i){ return i.series === k; });
+  var lead = {AI:'Here\'s how I built it. Navy cover, Buttermilk text.', WN:'Here\'s what happened. Buttermilk box, numbered No. 01.', BP:'Do this for your brand. Block Lilac, no photos.'}[k];
+  var cur = null, h = '<div class="panel ' + (k === 'AI' ? 'dark' : '') + '" style="' + (k === 'BP' ? 'background:var(--lilac)' : k === 'WN' ? 'background:var(--butter)' : '') + '"><div class="lab">' + PN[k] + '</div><div class="bd" style="font-size:18px;margin-top:4px">' + list.length + ' posts over 12 weeks</div><div style="font-size:13px;margin-top:4px;opacity:.85">' + lead + '</div></div>';
+  list.forEach(function(i){
+    var w = weekOf(i.date);
+    if (w !== cur){ cur = w; h += '<div class="grp">Week ' + w + ' · ' + short(wkStart(w)) + '</div>'; }
+    var posted = i.status === 'Posted';
+    h += '<button class="li-row' + (st.sel === i.id ? ' sel' : '') + '" data-id="' + esc(i.id) + '"><span class="dt">' + fmt(i.date).replace(' ', '<br>') + '</span><span style="flex:1"><b>' + esc(i.title) + '</b><span class="tag">' + esc(i.kind) + '</span>' + (isF2C(i) ? '<span class="tag">To camera</span>' : '') + '<span class="tag' + (posted ? ' posted' : '') + '">' + esc(i.status) + '</span>' + (i.raw.Hook ? '<div class="hk">' + esc(i.raw.Hook) + '</div>' : '') + '</span></button>';
+  });
+  if (!list.length) h += '<div class="panel"><div class="meta">Nothing scheduled in this pillar yet.</div></div>';
+  if (ids.length) h += '<div class="grp">Ideas for this pillar · ' + ids.length + '</div>' + ids.map(card).join('');
+  return h;
+}
+
+function scriptText(list){
+  return list.map(function(i){
+    return i.title.toUpperCase() + '\nPosts ' + fmt(i.date) + (i.film ? ' · film ' + fmt(i.film) : '') +
+      (i.raw.Hook ? '\n\nHook: ' + i.raw.Hook : '') + '\n\n' + i.shots + (i.raw['Ends on'] ? '\n\nEnds on: ' + i.raw['Ends on'] : '');
+  }).join('\n\n---\n\n');
+}
+function shotLine(i, s, k){
+  var key = i.id + '-' + k, on = !!st.shots[key];
+  return '<div class="chk" data-shot="' + esc(key) + '"><input type="checkbox"' + (on ? ' checked' : '') + '><div><span class="' + (on ? 'done' : '') + '">' + esc(s) + '</span>' + (st.sg === 'type' ? '<div class="meta">' + esc(i.title) + ' · posts ' + short(i.date) + '</div>' : '') + '</div></div>';
+}
+function renderScripts(){
+  var list = scriptPosts();
+  var h = '<div class="panel"><div class="row between"><span class="bd" style="font-size:18px">Scripts · ' + list.length + '</span><div class="row"><button class="btn red" id="sshare">Send to notes</button><button class="btn" id="scopy">Copy all</button></div></div>' +
+    '<div class="meta" style="margin-top:4px">White or plain tee, light denim · natural window light · rear camera, exposure locked · the red cap is the one Cherry detail. Keep API keys, Airtable IDs, emails and WhatsApp names off camera.</div>' +
+    '<div class="row between" style="margin-top:10px"><div class="row">' + [['todo','To film'],['done','Filmed'],['all','All']].map(function(x){ return '<button class="pill' + (st.sf === x[0] ? ' on' : '') + '" data-sf="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+    '<div class="row">' + [['post','By post'],['type','By shot type']].map(function(x){ return '<button class="pill' + (st.sg === x[0] ? ' on' : '') + '" data-sg="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div></div></div>';
+  if (!list.length) return h + '<div class="panel"><div class="meta">' + (st.sf === 'todo' ? 'Everything is filmed.' : 'Nothing here yet.') + '</div></div>';
+  if (st.sg === 'type'){
+    var all = [];
+    list.forEach(function(i){ i.shots.split('\n').filter(Boolean).forEach(function(s, k){ all.push({i:i, s:s, k:k}); }); });
+    [['Face to camera · back to back, same outfit and light', 0], ['Screen recordings', 1], ['Hands, doorway and the rest', 2]].forEach(function(g){
+      var xs = all.filter(function(x){ return shotGroup(x.s) === g[1]; });
+      if (xs.length) h += '<div class="panel"><div class="grp" style="margin-top:0">' + g[0] + ' · ' + xs.length + '</div>' + xs.map(function(x){ return shotLine(x.i, x.s, x.k); }).join('') + '</div>';
+    });
+    return h;
+  }
+  list.forEach(function(i){
+    var filmed = FILMED.indexOf(i.status) >= 0;
+    h += '<div class="script ' + (i.series ? i.series + 'b' : '') + '"><div class="row between"><span class="lab">' + esc(i.acc === 'rach' ? (plabel(i) || '@rach.hannon') : i.acc === 'sortd' ? 'Sortd' : i.acc) + ' · ' + esc(i.kind) + ' · posts ' + fmt(i.date) + '</span><span class="tag' + (filmed ? ' posted' : '') + '">' + esc(i.status) + '</span></div>' +
+      '<div class="bd" style="font-size:17px;margin-top:4px">' + esc(i.title) + '</div>' +
+      (i.raw.Hook ? '<div class="box" style="background:var(--soft)"><span class="lab">Hook</span>\n' + esc(i.raw.Hook) + '</div>' : '') +
+      i.shots.split('\n').filter(Boolean).map(function(s, k){ return shotLine(i, s, k); }).join('') +
+      (i.raw['Ends on'] ? '<div class="meta" style="margin-top:8px"><b>Ends on:</b> ' + esc(i.raw['Ends on']) + '</div>' : '') +
+      '<div class="row" style="margin-top:10px">' + (filmed ? '' : '<button class="btn red" data-filmed="' + esc(i.id) + '">Mark filmed</button>') + '<button class="btn" data-id="' + esc(i.id) + '">Open post</button></div></div>';
+  });
+  return h;
 }
 
 function renderWeek(){
   var all = scheduled().concat(automations(st.w)), h = '<div class="grid">';
   for (var o = 0; o < 7; o++){
     var d = add(wkStart(st.w), o);
-    var its = all.filter(function(i){ return i.date === d && match(i); });
-    var extra = (o === 2 ? '<button class="ban shootban" data-v="shoot">Shoot day</button>' : '') + (o >= 5 ? '<button class="ban brollban" data-v="broll">B-roll</button>' : '');
+    var its = all.filter(function(i){ return i.date === d; });
+    var extra = (o === 2 ? '<button class="ban shootban" data-v="scripts">Shoot day · scripts</button>' : '') + (o >= 5 ? '<button class="ban brollban" data-v="broll">B-roll</button>' : '');
     h += '<div class="col' + (o === 2 ? ' shoot' : '') + (d === today() ? ' today' : '') + (its.length || extra ? '' : ' empty') + '"><div class="lab">' + fmt(d) + (d === today() ? ' · today' : '') + '</div>' + extra + its.map(card).join('') + '</div>';
   }
   return h + '</div>';
@@ -236,28 +310,6 @@ function shotGroup(line){
   if (/^(screen|poll|end card)/i.test(line)) return 1;
   return 2;
 }
-function renderShoot(){
-  var wed = add(wkStart(st.w), 2);
-  var its = scheduled().filter(function(i){ return i.film === wed && i.shots; });
-  var all = [];
-  its.forEach(function(i){ i.shots.split('\n').filter(Boolean).forEach(function(s, k){ all.push({i:i, s:s, k:k}); }); });
-  var groups = [['Face to camera · back to back, same outfit and light', 0], ['Screen recordings', 1], ['Hands, doorway and the rest', 2]];
-  var h = '<div class="panel"><div class="bd" style="font-size:18px">Shoot day · ' + fmt(wed) + '</div>' +
-    '<div class="meta" style="margin-top:4px">White or plain tee, light denim · natural window light · rear camera, exposure locked · the red cap is the one Cherry detail</div>' +
-    '<div style="font-size:13px;color:var(--slate);margin-top:4px"><b>Keep off camera:</b> API keys, Airtable IDs, emails, WhatsApp names, Netlify settings</div>';
-  if (!all.length) return h + '<div class="box">Nothing to film this Wednesday.</div></div>';
-  groups.forEach(function(g){
-    var xs = all.filter(function(x){ return shotGroup(x.s) === g[1]; });
-    if (!xs.length) return;
-    h += '<div class="grp">' + g[0] + ' · ' + xs.length + '</div>';
-    xs.forEach(function(x){
-      var key = x.i.id + '-' + x.k, on = !!st.shots[key];
-      h += '<div class="chk" data-shot="' + esc(key) + '"><input type="checkbox"' + (on ? ' checked' : '') + '><div><span class="' + (on ? 'done' : '') + '">' + esc(x.s) + '</span><div class="meta">' + esc(x.i.title) + ' · posts ' + fmt(x.i.date) + '</div></div></div>';
-    });
-  });
-  return h + '</div>';
-}
-
 function brollLine(b){
   var post = b.Post && b.Post[0] ? DATA.posts.filter(function(p){ return p.id === b.Post[0]; })[0] : null;
   var late = b['Need by'] && b['Need by'] < today() && !b['Got it'];
@@ -341,7 +393,7 @@ function renderDetail(){
   if (st.sel.indexOf('auto-') === 0 || st.sel.indexOf('rev-') === 0){
     var isRev = st.sel.indexOf('rev-') === 0;
     d.innerHTML = '<div class="panel"><div class="row between"><span class="lab">' + (isRev ? 'Sunday review' : 'Sortd automation · read-only') + '</span><button class="btn" data-close>Close</button></div><div class="box">' +
-      (isRev ? 'Write your notes in the Sunday notes tab by 9:30pm. The review runs at 9:45pm and leaves suggestions; nothing changes until you accept one.' : 'Built by the scheduled task on the day. Review the draft in the Sortd Social project, then post it from Instagram.') + '</div></div>';
+      (isRev ? 'Write your notes in Sunday notes by 9:30pm. The review runs at 9:45pm and leaves suggestions; nothing changes until you accept one.' : 'Built by the scheduled task on the day. Review the draft in the Sortd Social project, then post it from Instagram.') + '</div></div>';
     return;
   }
   var p = DATA.posts.filter(function(x){ return x.id === st.sel; })[0];
@@ -386,9 +438,14 @@ document.addEventListener('click', function(e){
   if (t.id === 'cplist') return copy(brollText(), 'List');
   if (ds.v){ st.view = ds.v; st.sel = null; st.editing = null; return render(); }
   if (ds.n !== undefined){ var n = +ds.n; st.w = n === 0 ? thisWeek() : Math.min(WEEKS, Math.max(1, st.w + n)); st.sel = null; return render(); }
-  if (ds.f){ st.f = ds.f; return render(); }
+  if (ds.cal){ st.cal = ds.cal; st.sel = null; return render(); }
+  if (ds.sf){ st.sf = ds.sf; return render(); }
+  if (ds.sg){ st.sg = ds.sg; return render(); }
+  if (ds.filmed){ var fp = DATA.posts.filter(function(x){ return x.id === ds.filmed; })[0]; fp.Status = 'Filmed'; render(); return api('updatePost', {id: fp.id, fields: {Status: 'Filmed'}}).then(function(r){ replacePost(r.post); render(); toast('Marked filmed'); }).catch(function(e2){ toast(e2.message); load(true); }); }
+  if (t.id === 'sshare'){ var stx = scriptText(scriptPosts()); if (navigator.share) navigator.share({title:'Scripts', text:stx}).catch(function(){}); else copy(stx, 'Scripts'); return; }
+  if (t.id === 'scopy') return copy(scriptText(scriptPosts()), 'Scripts');
   if (ds.bf){ st.bf = ds.bf; return render(); }
-  if (ds.w){ st.w = +ds.w; st.view = 'week'; return render(); }
+  if (ds.w){ st.w = +ds.w; st.view = 'cal'; st.cal = 'week'; return render(); }
   if (ds.id){ st.sel = ds.id; st.editing = null; return render(); }
   if (ds.close !== undefined){ st.sel = null; st.editing = null; return render(); }
   if (ds.edit){ st.editing = ds.edit; renderDetail(); var ta = $('edtext'); if (ta) ta.focus(); return; }
