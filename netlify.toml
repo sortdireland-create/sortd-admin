@@ -17,6 +17,13 @@
   to = "/admin.html"
   status = 200
 
+# Content calendar for @rach.hannon and Sortd (public/content.html).
+# Data and the password check live in netlify/functions/content.js.
+[[redirects]]
+  from = "/content"
+  to = "/content.html"
+  status = 200
+
 [[redirects]]
   from = "/admin/*"
   to = "/admin.html"

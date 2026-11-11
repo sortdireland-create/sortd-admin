@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#EDE6D8">
+<title>Content calendar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@700&family=Archivo:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bone:#EDE6D8;--paper:#F7F2E8;--ink:#22201C;--brick:#AE3B2C;--sand:#B99568;--umber:#6B5C4D;--line:#D9CDB8;--navy:#293148;--blue:#6B8AA8}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bone);color:var(--ink);font-family:Archivo,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+body{padding:16px 16px 80px;max-width:1180px;margin:0 auto}
+.bd{font-family:'Bodoni Moda',Georgia,serif;font-weight:700}
+.lab{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--umber)}
+.meta{font-size:12px;color:var(--umber)}
+.row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.between{justify-content:space-between}
+button{font-family:inherit;cursor:pointer}
+.pill{font-size:13px;padding:6px 12px;border-radius:999px;border:.5px solid var(--sand);color:var(--ink);background:var(--paper)}
+.pill.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.btn{font-size:13px;border:.5px solid var(--ink);border-radius:6px;padding:6px 11px;background:var(--paper);color:var(--ink)}
+.btn.red{background:var(--brick);color:var(--paper);border-color:var(--brick)}
+.btn:disabled{opacity:.5}
+.tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;margin-top:12px}
+.tabs .pill{white-space:nowrap}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:12px}
+.col{background:var(--paper);border-radius:8px;padding:6px;min-height:140px}
+.col.shoot{outline:1.5px solid var(--brick)}
+.col.today{box-shadow:inset 0 0 0 2px var(--sand)}
+.c{font-size:12px;line-height:1.3;border-radius:6px;padding:6px;margin-top:5px;text-align:left;width:100%;display:block}
+.c.sel{box-shadow:0 0 0 2px var(--sand)}
+.BP{background:var(--brick);color:var(--paper);border:0}
+.WN{background:var(--bone);border:1px solid var(--brick);color:var(--ink)}
+.AI{background:var(--ink);color:var(--paper);border:0;border-left:3px solid var(--sand)}
+.ST{background:var(--paper);border:1px solid var(--ink);color:var(--ink)}
+.SD{background:var(--navy);color:#fff;border:0}
+.AUTO{border:1px dashed var(--blue);color:var(--navy);background:#fff}
+.TASK{background:#fff;color:var(--umber);border:.5px solid var(--line)}
+.LI{background:#E6EEF2;color:#1F3A4A;border:0}
+.SUB{background:#E9E3D6;color:#4A3F33;border:.5px solid var(--sand)}
+.IDEA{background:#fff;border:1px dashed var(--sand);color:var(--ink)}
+.done{opacity:.45;text-decoration:line-through}
+.f2c{display:inline-block;font-size:10px;letter-spacing:.05em;background:var(--sand);color:var(--ink);border-radius:4px;padding:1px 4px;margin-bottom:2px}
+.ban{font-size:11px;text-align:center;border-radius:5px;padding:3px;margin-top:4px;border:0;width:100%}
+.panel{background:var(--paper);border-radius:10px;padding:14px;margin-top:12px}
+.box{background:#fff;border-radius:6px;padding:9px;font-size:13px;line-height:1.5;margin-top:6px;white-space:pre-wrap;word-wrap:break-word}
+textarea,input[type=text],input[type=url],input[type=password],input[type=date]{width:100%;font-family:inherit;font-size:15px;border-radius:6px;border:.5px solid var(--sand);padding:9px;background:#fff;color:var(--ink)}
+textarea{min-height:110px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;padding:9px 0;border-top:.5px solid #E5DACA;cursor:pointer}
+.chk input{width:20px;height:20px;margin-top:1px;flex:none}
+.grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--brick);margin-top:14px}
+.late{color:var(--brick)}
+.err{font-size:13px;color:#A32D2D;min-height:16px;margin-top:4px}
+table.ov{width:100%;border-collapse:collapse;font-size:13px}
+table.ov td{padding:7px 4px;border-top:.5px solid var(--line);vertical-align:top}
+.bar{display:flex;height:9px;border-radius:5px;overflow:hidden;margin-top:6px}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:9;pointer-events:none}
+#toast span{background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:999px;font-size:13px}
+#login{max-width:360px;margin:12vh auto 0}
+.hidden{display:none!important}
+@media (max-width:760px){
+  body{padding:12px 12px 80px}
+  .grid{grid-template-columns:1fr}
+  .col{min-height:0}
+  .col.empty{display:none}
+  .c{font-size:14px;padding:9px}
+}
+</style>
+</head>
+<body>
+
+<div id="login" class="panel">
+  <div class="bd" style="font-size:22px">Content calendar</div>
+  <div class="meta" style="margin:6px 0 12px">Same password as the Sortd admin page.</div>
+  <input type="password" id="pw" placeholder="Password" autocomplete="current-password">
+  <div class="err" id="pwerr"></div>
+  <button class="btn red" id="pwgo" style="margin-top:6px">Open</button>
+</div>
+
+<div id="app" class="hidden">
+  <div class="row between">
+    <span class="bd" style="font-size:22px">Content calendar</span>
+    <div class="row"><button class="btn" id="refresh">Refresh</button><button class="btn" id="logout">Log out</button></div>
+  </div>
+  <div class="row tabs" id="tabs"></div>
+  <div class="row between" style="margin-top:10px" id="wkbar"></div>
+  <div class="row tabs" style="margin-top:8px" id="filters"></div>
+  <div id="main"></div>
+  <div id="detail"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+var START = '2026-11-09', WEEKS = 12;
+var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], D = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+var PN = {AI:'THE AI STACK', WN:'WORKING NOTES', BP:'THE BRAND PLAYBOOK', ST:'START HERE'};
+var PILLAR_KEY = {'THE AI STACK':'AI','WORKING NOTES':'WN','THE BRAND PLAYBOOK':'BP','START HERE':'ST'};
+var STEPS = ['Idea','Planned','Scripted','Filmed','Edited','Ready','Posted'];
+var EDITABLE = ['Hook','Brief','Shot list','Caption','Hashtags','Alt text','Ends on','Checks'];
+
+var store = {
+  get: function(k){ try { return localStorage.getItem(k); } catch(e){ return null; } },
+  set: function(k,v){ try { localStorage.setItem(k,v); } catch(e){} },
+  del: function(k){ try { localStorage.removeItem(k); } catch(e){} }
+};
+var pw = store.get('cc_pw') || '';
+var DATA = {posts:[], broll:[], notes:[], suggestions:[], today: null};
+var st = {view:'week', w:1, f:'all', sel:null, bf:'todo', editing:null, shots: JSON.parse(store.get('cc_shots') || '{}')};
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function ms(d){ return Date.parse(d + 'T12:00:00Z'); }
+function iso(t){ return new Date(t).toISOString().slice(0,10); }
+function add(d, n){ return iso(ms(d) + n*864e5); }
+function wkStart(w){ return add(START, (w-1)*7); }
+function weekOf(d){ return Math.floor((ms(d) - ms(START)) / (7*864e5)) + 1; }
+function fmt(d){ var x = new Date(ms(d)); return D[x.getUTCDay()] + ' ' + x.getUTCDate() + ' ' + M[x.getUTCMonth()]; }
+function short(d){ var x = new Date(ms(d)); return x.getUTCDate() + ' ' + M[x.getUTCMonth()]; }
+function today(){ return DATA.today || iso(Date.now()); }
+function thisWeek(){ return Math.min(WEEKS, Math.max(1, weekOf(today()))); }
+
+var tt;
+function toast(t){ $('toast').innerHTML = '<span>' + esc(t) + '</span>'; clearTimeout(tt); tt = setTimeout(function(){ $('toast').innerHTML = ''; }, 2200); }
+
+function api(action, extra){
+  var body = Object.assign({password: pw, action: action}, extra || {});
+  return fetch('/.netlify/functions/content', {method:'POST', headers:{'content-type':'application/json'}, body: JSON.stringify(body)})
+    .then(function(r){ return r.json().catch(function(){ return {error:'Bad response'}; }).then(function(j){ if (!r.ok) { var e = new Error(j.error || ('Error ' + r.status)); e.status = r.status; throw e; } return j; }); });
+}
+
+function copy(text, label){
+  var done = function(){ toast(label + ' copied'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+  function fallback(){ var t = document.createElement('textarea'); t.value = text; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); done(); } catch(e){ toast('Copy failed'); } document.body.removeChild(t); }
+}
+
+// ---------- shaping the data ----------
+function norm(p){
+  var kind = p.Kind || 'Post', acc;
+  if (kind === 'Task') acc = 'task';
+  else if (p.Account === 'Sortd') acc = 'sortd';
+  else if (p.Account === 'LinkedIn') acc = 'li';
+  else if (p.Account === 'Working Notes') acc = 'wn';
+  else acc = 'rach';
+  return {id:p.id, raw:p, title:p.Title || '(untitled)', date:p.Date || null, film:p['Film day'] || null, acc:acc, kind:kind,
+    series: PILLAR_KEY[p.Pillar] || null, pillar:p.Pillar || '', status:p.Status || 'Planned', no:p['No.'] || null,
+    shots:p['Shot list'] || '', link:p['Post link'] || ''};
+}
+function posts(){ return DATA.posts.map(norm); }
+function scheduled(){ return posts().filter(function(i){ return i.date && i.status !== 'Idea'; }); }
+function ideas(){ return posts().filter(function(i){ return !i.date || i.status === 'Idea'; }); }
+function automations(w){
+  var out = [];
+  [[0,'New listings roundup'],[1,'Provider spotlight'],[3,'New listings roundup'],[4,'Provider spotlight']].forEach(function(a){
+    out.push({id:'auto-'+w+'-'+a[0], auto:true, acc:'auto', kind:'Carousel', title:'Auto · ' + a[1], date: add(wkStart(w), a[0]), status:'Planned'});
+  });
+  out.push({id:'rev-'+w, auto:true, acc:'review', kind:'Review', title:'Sunday notes in by 9:30pm · review 9:45pm', date: add(wkStart(w), 6), status:'Planned'});
+  return out;
+}
+function isF2C(i){ return /to camera/i.test(i.shots || ''); }
+function cls(i){
+  if (i.acc === 'auto') return 'AUTO';
+  if (i.acc === 'review' || i.acc === 'task') return 'TASK';
+  if (i.acc === 'sortd') return 'SD';
+  if (i.acc === 'li') return 'LI';
+  if (i.acc === 'wn') return 'SUB';
+  return i.series || 'TASK';
+}
+function plabel(i){ if (i.series === 'WN' && i.no) return 'WORKING NOTES · No. ' + i.no; return PN[i.series] || ''; }
+function match(i){
+  var f = st.f;
+  if (f === 'all') return true;
+  if (f === 'f2c') return isF2C(i);
+  if (PN[f]) return i.acc === 'rach' && i.series === f;
+  if (f === 'auto') return i.acc === 'auto';
+  if (f === 'task') return i.acc === 'task' || i.acc === 'review';
+  if (f === 'li') return i.acc === 'li' || i.acc === 'wn';
+  return i.acc === f;
+}
+
+// ---------- rendering ----------
+var VIEWS = [['week','Week'],['shoot','Shoot day'],['broll','B-roll'],['ov','12 weeks'],['ideas','Ideas'],['notes','Sunday notes'],['sug','Suggestions']];
+var FILTERS = [['all','All'],['rach','@rach.hannon'],['AI','AI Stack'],['WN','Working Notes'],['BP','Brand Playbook'],['f2c','Face to camera'],['sortd','Sortd'],['auto','Automations'],['li','LinkedIn + Substack'],['task','Tasks']];
+
+function card(i){
+  var kindTxt = (i.status === 'Idea' && !i.raw.Kind) ? '' : ' · ' + esc(i.kind);
+  var pre = i.acc === 'rach' ? '<b>' + esc(plabel(i) || 'Idea') + '</b>' + kindTxt + '<br>' : i.acc === 'sortd' ? 'Sortd ' + esc(i.kind) + ' · ' : i.acc === 'li' ? 'LinkedIn · ' : '';
+  var f2 = (i.acc === 'rach' && isF2C(i)) ? '<span class="f2c">TO CAMERA</span><br>' : '';
+  var dn = (i.status === 'Posted' || i.status === 'Done') ? ' done' : '';
+  return '<button class="c ' + cls(i) + (st.sel === i.id ? ' sel' : '') + dn + '" data-id="' + esc(i.id) + '">' + f2 + pre + esc(i.title) + '</button>';
+}
+
+function render(){
+  var pending = DATA.suggestions.filter(function(s){ return (s.Status || 'Pending') === 'Pending' && s.Type !== 'Weekly summary'; }).length;
+  var toGet = DATA.broll.filter(function(b){ return !b['Got it']; }).length;
+  $('tabs').innerHTML = VIEWS.map(function(v){
+    var n = v[0] === 'sug' ? ' · ' + pending : v[0] === 'broll' ? ' · ' + toGet : v[0] === 'ideas' ? ' · ' + ideas().length : '';
+    return '<button class="pill' + (st.view === v[0] ? ' on' : '') + '" data-v="' + v[0] + '">' + v[1] + n + '</button>';
+  }).join('');
+  var wk = st.view === 'week' || st.view === 'shoot';
+  var ws = wkStart(st.w), we = add(ws, 6);
+  $('wkbar').innerHTML = wk ? '<span class="lab">Week ' + st.w + ' · ' + short(ws) + ' – ' + short(we) + '</span><div class="row"><button class="btn" data-n="-1">‹ Prev</button><button class="btn" data-n="0">This week</button><button class="btn" data-n="1">Next ›</button></div>' : '';
+  $('filters').innerHTML = st.view === 'week' ? FILTERS.map(function(f){ return '<button class="pill' + (st.f === f[0] ? ' on' : '') + '" data-f="' + f[0] + '">' + f[1] + '</button>'; }).join('') : '';
+  var fn = {week:renderWeek, shoot:renderShoot, broll:renderBroll, ov:renderOverview, ideas:renderIdeas, notes:renderNotes, sug:renderSug}[st.view];
+  $('main').innerHTML = fn();
+  renderDetail();
+}
+
+function renderWeek(){
+  var all = scheduled().concat(automations(st.w)), h = '<div class="grid">';
+  for (var o = 0; o < 7; o++){
+    var d = add(wkStart(st.w), o);
+    var its = all.filter(function(i){ return i.date === d && match(i); });
+    var extra = (o === 2 ? '<button class="ban BP" data-v="shoot">Shoot day</button>' : '') + (o >= 5 ? '<button class="ban" style="background:var(--sand);color:var(--ink)" data-v="broll">B-roll</button>' : '');
+    h += '<div class="col' + (o === 2 ? ' shoot' : '') + (d === today() ? ' today' : '') + (its.length || extra ? '' : ' empty') + '"><div class="lab">' + fmt(d) + (d === today() ? ' · today' : '') + '</div>' + extra + its.map(card).join('') + '</div>';
+  }
+  return h + '</div>';
+}
+
+function shotGroup(line){
+  if (/to camera/i.test(line)) return 0;
+  if (/^(screen|poll|end card)/i.test(line)) return 1;
+  return 2;
+}
+function renderShoot(){
+  var wed = add(wkStart(st.w), 2);
+  var its = scheduled().filter(function(i){ return i.film === wed && i.shots; });
+  var all = [];
+  its.forEach(function(i){ i.shots.split('\n').filter(Boolean).forEach(function(s, k){ all.push({i:i, s:s, k:k}); }); });
+  var groups = [['Face to camera · back to back, same outfit and light', 0], ['Screen recordings', 1], ['Hands, doorway and the rest', 2]];
+  var h = '<div class="panel"><div class="bd" style="font-size:18px">Shoot day · ' + fmt(wed) + '</div>' +
+    '<div class="meta" style="margin-top:4px">Blazer over a plain tee · window light · rear camera, exposure locked · one brick-red detail</div>' +
+    '<div style="font-size:13px;color:var(--brick);margin-top:4px">Keep off camera: API keys, Airtable IDs, emails, WhatsApp names, Netlify settings</div>';
+  if (!all.length) return h + '<div class="box">Nothing to film this Wednesday.</div></div>';
+  groups.forEach(function(g){
+    var xs = all.filter(function(x){ return shotGroup(x.s) === g[1]; });
+    if (!xs.length) return;
+    h += '<div class="grp">' + g[0] + ' · ' + xs.length + '</div>';
+    xs.forEach(function(x){
+      var key = x.i.id + '-' + x.k, on = !!st.shots[key];
+      h += '<div class="chk" data-shot="' + esc(key) + '"><input type="checkbox"' + (on ? ' checked' : '') + '><div><span class="' + (on ? 'done' : '') + '">' + esc(x.s) + '</span><div class="meta">' + esc(x.i.title) + ' · posts ' + fmt(x.i.date) + '</div></div></div>';
+    });
+  });
+  return h + '</div>';
+}
+
+function brollLine(b){
+  var post = b.Post && b.Post[0] ? DATA.posts.filter(function(p){ return p.id === b.Post[0]; })[0] : null;
+  var late = b['Need by'] && b['Need by'] < today() && !b['Got it'];
+  return '<div class="chk" data-b="' + esc(b.id) + '"><input type="checkbox"' + (b['Got it'] ? ' checked' : '') + '><div><span class="' + (b['Got it'] ? 'done' : '') + '">' + esc(b.Shot) + '</span><div class="meta' + (late ? ' late' : '') + '">' + (b['Need by'] ? 'Need by ' + fmt(b['Need by']) : 'Any weekend') + (post ? ' · ' + esc(post.Title) : '') + '</div></div></div>';
+}
+function brollText(){
+  var todo = DATA.broll.filter(function(b){ return !b['Got it']; }).sort(function(a, c){ return (a['Need by'] || '9') < (c['Need by'] || '9') ? -1 : 1; });
+  return 'B-roll to get\n\n' + todo.map(function(b){ return b.Shot + (b['Need by'] ? ' (by ' + short(b['Need by']) + ')' : ''); }).join('\n');
+}
+function renderBroll(){
+  var list = DATA.broll.filter(function(b){ return st.bf === 'todo' ? !b['Got it'] : st.bf === 'got' ? !!b['Got it'] : true; });
+  var soon = list.filter(function(b){ return b['Need by']; }).sort(function(a, c){ return a['Need by'] < c['Need by'] ? -1 : 1; });
+  var any = list.filter(function(b){ return !b['Need by']; });
+  return '<div class="panel"><div class="row between"><span class="bd" style="font-size:18px">B-roll</span><div class="row"><button class="btn red" id="share">Send to notes</button><button class="btn" id="cplist">Copy list</button></div></div>' +
+    '<div class="meta" style="margin-top:4px">Mostly weekends. Tick it here and it comes off the list. Hands and backs only if the children are in frame.</div>' +
+    '<div class="row" style="margin-top:8px">' + [['todo','To get'],['got','Got it'],['all','All']].map(function(x){ return '<button class="pill' + (st.bf === x[0] ? ' on' : '') + '" data-bf="' + x[0] + '">' + x[1] + '</button>'; }).join('') + '</div>' +
+    (soon.length ? '<div class="grp">Needed for a post · soonest first</div>' + soon.map(brollLine).join('') : '') +
+    (any.length ? '<div class="grp">Generic library · any weekend</div>' + any.map(brollLine).join('') : '') +
+    '<div class="row" style="margin-top:14px"><input type="text" id="bnew" placeholder="Rain on the kitchen window" style="flex:1;min-width:160px"><button class="btn" id="badd">Add</button></div><div class="err" id="berr"></div></div>';
+}
+
+function renderOverview(){
+  var r = scheduled().filter(function(i){ return i.acc === 'rach' && (i.kind === 'Reel' || i.kind === 'Carousel') && i.series && i.series !== 'ST'; });
+  var t = r.length || 1, c = function(k){ return r.filter(function(i){ return i.series === k; }).length; };
+  var pct = function(k){ return Math.round(c(k) / t * 100); };
+  var h = '<div class="panel"><div class="row between"><span class="lab">Pillar mix · ' + r.length + ' posts</span><span class="meta">Target 40 / 30 / 30</span></div>' +
+    '<div class="bar"><div style="width:' + pct('AI') + '%;background:var(--ink)"></div><div style="width:' + pct('WN') + '%;background:var(--bone);border:1px solid var(--brick)"></div><div style="width:' + pct('BP') + '%;background:var(--brick)"></div></div>' +
+    '<div class="row meta" style="margin-top:6px;gap:14px"><span>AI Stack ' + c('AI') + ' (' + pct('AI') + '%)</span><span>Working Notes ' + c('WN') + ' (' + pct('WN') + '%)</span><span>Brand Playbook ' + c('BP') + ' (' + pct('BP') + '%)</span></div></div>';
+  h += '<div class="panel"><table class="ov">';
+  for (var w = 1; w <= WEEKS; w++){
+    var its = scheduled().filter(function(i){ return weekOf(i.date) === w && i.acc === 'rach' && i.kind !== 'Story' && i.kind !== 'Task'; }).sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+    h += '<tr data-w="' + w + '" style="cursor:pointer"><td style="width:70px"><b>Wk ' + w + '</b><br><span class="lab">' + short(wkStart(w)) + '</span></td><td>' +
+      (its.length ? its.map(function(i){ return '<span class="c ' + cls(i) + '" style="display:inline-block;width:auto;margin:2px">' + esc(i.kind) + ' · ' + esc(i.title) + '</span>'; }).join('') : '<span class="meta">Nothing scheduled</span>') + '</td></tr>';
+  }
+  return h + '</table></div>';
+}
+
+function renderIdeas(){
+  var list = ideas();
+  var by = {};
+  list.forEach(function(i){ var k = i.series || 'Other'; (by[k] = by[k] || []).push(i); });
+  var order = ['AI','WN','BP','ST','Other'];
+  var h = '<div class="panel"><div class="bd" style="font-size:18px">Ideas</div><div class="meta" style="margin-top:4px">Not on the calendar yet. Open one to give it a date. The Sunday review adds accepted ideas here.</div>';
+  order.forEach(function(k){ if (!by[k]) return; h += '<div class="grp">' + (PN[k] || 'No pillar yet') + ' · ' + by[k].length + '</div>' + by[k].map(card).join(''); });
+  h += '<div class="grp">Add an idea</div><div class="row" style="margin-top:6px"><input type="text" id="inew" placeholder="The prompt I use for every carousel" style="flex:1;min-width:160px">' +
+    '<select id="ipil" class="btn"><option value="THE AI STACK">AI Stack</option><option value="WORKING NOTES">Working Notes</option><option value="THE BRAND PLAYBOOK">Brand Playbook</option></select><button class="btn" id="iadd">Add</button></div><div class="err" id="ierr"></div></div>';
+  return h;
+}
+
+function renderNotes(){
+  return '<div class="panel"><div class="bd" style="font-size:18px">Sunday notes</div><div class="meta" style="margin-top:4px">What you built, what posted, what landed, any numbers. The Sunday review reads everything saved since last Sunday, at 9:45pm.</div>' +
+    '<textarea id="nt" placeholder="Shipped the class page redesign. Intro Reel: 3 saves, 1 follow. Parents in the Malahide group asked about Christmas camps." style="margin-top:8px"></textarea><div class="err" id="nerr"></div><button class="btn red" id="nsave">Save notes</button>' +
+    DATA.notes.map(function(n){ return '<div class="box"><span class="lab">' + (n.Date ? fmt(n.Date) : '') + (n.Processed ? ' · reviewed' : '') + '</span>\n' + esc(n.Notes) + '</div>'; }).join('') + '</div>';
+}
+
+function renderSug(){
+  var sum = DATA.suggestions.filter(function(s){ return s.Type === 'Weekly summary'; }).sort(function(a, b){ return (a['Week of'] || '') < (b['Week of'] || '') ? 1 : -1; })[0];
+  var rest = DATA.suggestions.filter(function(s){ return s.Type !== 'Weekly summary'; }).sort(function(a, b){
+    var pa = (a.Status || 'Pending') === 'Pending' ? 0 : 1, pb = (b.Status || 'Pending') === 'Pending' ? 0 : 1;
+    if (pa !== pb) return pa - pb; return (a['Week of'] || '') < (b['Week of'] || '') ? 1 : -1;
+  }).slice(0, 40);
+  var h = '';
+  if (sum) h += '<div class="panel" style="background:var(--ink);color:var(--paper)"><div class="lab" style="color:var(--sand)">Weekly summary' + (sum['Week of'] ? ' · ' + fmt(sum['Week of']) : '') + '</div><div style="font-size:14px;margin-top:6px;line-height:1.55;white-space:pre-wrap">' + esc(sum.Proposed || sum.Why || sum.Title) + '</div></div>';
+  if (!rest.length) return h + '<div class="panel"><div class="meta">No suggestions yet. The first review runs on Sunday at 9:45pm.</div></div>';
+  rest.forEach(function(s){
+    var status = s.Status || 'Pending';
+    var post = s.Post && s.Post[0] ? DATA.posts.filter(function(p){ return p.id === s.Post[0]; })[0] : null;
+    h += '<div class="panel" style="' + (status !== 'Pending' ? 'opacity:.55' : '') + '"><div class="row between"><b style="font-size:14px">' + esc(s.Title) + '</b><span class="lab">' + esc(s.Type || '') + ' · ' + esc(status) + '</span></div>' +
+      (post ? '<div class="meta" style="margin-top:4px">' + esc(post.Title) + (s.Field ? ' · ' + esc(s.Field) : '') + '</div>' + (s.Field ? '<div class="box" style="color:var(--umber)">Now: ' + esc(post[s.Field] || '(empty)') + '</div>' : '') : '') +
+      '<div class="box">' + (post && s.Field ? 'Proposed: ' : '') + esc(s.Proposed || '') + '</div>' +
+      (s.Why ? '<div class="meta" style="margin-top:6px">' + esc(s.Why) + '</div>' : '') +
+      (s.Source ? '<div class="meta" style="margin-top:4px">Source: ' + esc(s.Source) + '</div>' : '') +
+      (status === 'Pending' ? '<div class="row" style="margin-top:8px"><button class="btn red" data-acc="' + esc(s.id) + '">' + (post && s.Field ? 'Accept' : 'Add as idea') + '</button><button class="btn" data-rej="' + esc(s.id) + '">Reject</button></div>' : '') + '</div>';
+  });
+  return h;
+}
+
+function renderDetail(){
+  var d = $('detail');
+  if (!st.sel){ d.innerHTML = ''; return; }
+  if (st.sel.indexOf('auto-') === 0 || st.sel.indexOf('rev-') === 0){
+    var isRev = st.sel.indexOf('rev-') === 0;
+    d.innerHTML = '<div class="panel"><div class="row between"><span class="lab">' + (isRev ? 'Sunday review' : 'Sortd automation · read-only') + '</span><button class="btn" data-close>Close</button></div><div class="box">' +
+      (isRev ? 'Write your notes in the Sunday notes tab by 9:30pm. The review runs at 9:45pm and leaves suggestions; nothing changes until you accept one.' : 'Built by the scheduled task on the day. Review the draft in the Sortd Social project, then post it from Instagram.') + '</div></div>';
+    return;
+  }
+  var p = DATA.posts.filter(function(x){ return x.id === st.sel; })[0];
+  if (!p){ d.innerHTML = ''; return; }
+  var i = norm(p);
+  var steps = i.kind === 'Task' ? ['Planned','Done'] : STEPS;
+  var accName = {rach:'@rach.hannon', sortd:'Sortd', li:'LinkedIn', wn:'Substack', task:'Task'}[i.acc];
+  var sec = function(name, canCopy){
+    var v = p[name];
+    if (st.editing === name) return '<div class="lab" style="margin-top:12px">' + name + '</div><textarea id="edtext">' + esc(v || '') + '</textarea><div class="row" style="margin-top:6px"><button class="btn red" data-save="' + name + '">Save</button><button class="btn" data-cancel>Cancel</button></div>';
+    if (!v) return '';
+    return '<div class="row between" style="margin-top:12px"><span class="lab">' + name + '</span><div class="row">' + (canCopy ? '<button class="btn" data-cp="' + name + '">Copy</button>' : '') + '<button class="btn" data-edit="' + name + '">Edit</button></div></div><div class="box">' + esc(v) + '</div>';
+  };
+  var missing = EDITABLE.filter(function(n){ return !p[n] && st.editing !== n; });
+  d.innerHTML = '<div class="panel" id="dpanel"><div class="row between"><span class="lab">' + esc(accName) + ' · ' + (plabel(i) ? esc(plabel(i)) + ' · ' : '') + esc(i.kind) + (i.date ? ' · ' + fmt(i.date) : '') + '</span><button class="btn" data-close>Close</button></div>' +
+    '<div class="bd" style="font-size:19px;margin-top:6px">' + esc(i.title) + '</div>' +
+    '<div class="row" style="margin-top:10px">' + steps.map(function(s){ return '<button class="pill' + (i.status === s ? ' on' : '') + '" data-st="' + s + '">' + s + '</button>'; }).join('') + '</div>' +
+    '<div class="row" style="margin-top:10px"><span class="meta">Posts</span><input type="date" id="pdate" value="' + esc(i.date || '') + '" style="width:auto"><span class="meta">Film</span><input type="date" id="pfilm" value="' + esc(i.film || '') + '" style="width:auto"><button class="btn" id="dsave">Save dates</button></div>' +
+    sec('Hook', true) + sec('Brief', false) + sec('Shot list', false) + sec('Caption', true) + sec('Hashtags', true) + sec('Alt text', true) + sec('Ends on', false) + sec('Checks', false) +
+    (missing.length ? '<div class="row" style="margin-top:12px"><span class="meta">Add</span>' + missing.map(function(n){ return '<button class="btn" data-edit="' + n + '">' + n + '</button>'; }).join('') + '</div>' : '') +
+    (i.kind !== 'Task' ? '<div class="lab" style="margin-top:14px">After posting</div><input type="url" id="plink" placeholder="Paste the post link" value="' + esc(i.link) + '" style="margin-top:4px"><textarea id="presults" placeholder="Results: saves, sends, profile visits, follows" style="min-height:70px;margin-top:6px">' + esc(p.Results || '') + '</textarea><button class="btn red" id="psave" style="margin-top:6px">Save and mark posted</button>' : '') +
+    '</div>';
+  if (window.innerWidth > 760) d.scrollIntoView({block:'nearest', behavior:'smooth'}); else document.getElementById('dpanel').scrollIntoView({block:'start', behavior:'smooth'});
+}
+
+// ---------- writes ----------
+function replacePost(post){ DATA.posts = DATA.posts.map(function(p){ return p.id === post.id ? post : p; }); }
+function savePost(id, fields, msg){
+  return api('updatePost', {id:id, fields:fields}).then(function(r){ replacePost(r.post); st.editing = null; render(); toast(msg || 'Saved'); })
+    .catch(function(e){ toast(e.message); });
+}
+
+// ---------- events ----------
+document.addEventListener('click', function(e){
+  var t = e.target.closest('button, [data-shot], [data-b], tr[data-w]');
+  if (!t) return;
+  var ds = t.dataset;
+  if (t.id === 'pwgo') return login();
+  if (t.id === 'logout'){ store.del('cc_pw'); pw = ''; $('app').classList.add('hidden'); $('login').classList.remove('hidden'); return; }
+  if (t.id === 'refresh') return load(true);
+  if (t.id === 'share'){ var txt = brollText(); if (navigator.share) navigator.share({title:'B-roll to get', text:txt}).catch(function(){}); else copy(txt, 'List'); return; }
+  if (t.id === 'cplist') return copy(brollText(), 'List');
+  if (ds.v){ st.view = ds.v; st.sel = null; st.editing = null; return render(); }
+  if (ds.n !== undefined){ var n = +ds.n; st.w = n === 0 ? thisWeek() : Math.min(WEEKS, Math.max(1, st.w + n)); st.sel = null; return render(); }
+  if (ds.f){ st.f = ds.f; return render(); }
+  if (ds.bf){ st.bf = ds.bf; return render(); }
+  if (ds.w){ st.w = +ds.w; st.view = 'week'; return render(); }
+  if (ds.id){ st.sel = ds.id; st.editing = null; return render(); }
+  if (ds.close !== undefined){ st.sel = null; st.editing = null; return render(); }
+  if (ds.edit){ st.editing = ds.edit; renderDetail(); var ta = $('edtext'); if (ta) ta.focus(); return; }
+  if (ds.cancel !== undefined){ st.editing = null; return renderDetail(); }
+  if (ds.save){ var f = {}; f[ds.save] = $('edtext').value; return savePost(st.sel, f); }
+  if (ds.cp){ var p = DATA.posts.filter(function(x){ return x.id === st.sel; })[0]; return copy(p[ds.cp] || '', ds.cp); }
+  if (ds.st){ var sp = DATA.posts.filter(function(x){ return x.id === st.sel; })[0]; sp.Status = ds.st; render(); return savePost(st.sel, {Status: ds.st}, 'Status: ' + ds.st); }
+  if (t.id === 'dsave'){ return savePost(st.sel, {'Date': $('pdate').value || null, 'Film day': $('pfilm').value || null, 'Status': ($('pdate').value && DATA.posts.filter(function(x){ return x.id === st.sel; })[0].Status === 'Idea') ? 'Planned' : undefined}, 'Dates saved'); }
+  if (t.id === 'psave'){ return savePost(st.sel, {'Post link': $('plink').value.trim() || null, 'Results': $('presults').value || null, 'Status': 'Posted'}, 'Saved and marked posted'); }
+  if (ds.shot){ st.shots[ds.shot] = !st.shots[ds.shot]; store.set('cc_shots', JSON.stringify(st.shots)); return render(); }
+  if (ds.b){
+    var b = DATA.broll.filter(function(x){ return x.id === ds.b; })[0]; b['Got it'] = !b['Got it']; render();
+    return api('toggleBroll', {id: b.id, done: b['Got it']}).then(function(){ toast(b['Got it'] ? 'Got it' : 'Back on the list'); }).catch(function(e2){ b['Got it'] = !b['Got it']; render(); toast(e2.message); });
+  }
+  if (t.id === 'badd'){
+    var v = $('bnew').value.trim(); if (!v){ $('berr').textContent = 'Describe the shot first'; return; }
+    t.disabled = true;
+    return api('addBroll', {shot: v}).then(function(r){ DATA.broll.push(r.broll); render(); toast('Added to the library'); }).catch(function(e2){ t.disabled = false; $('berr').textContent = e2.message; });
+  }
+  if (t.id === 'iadd'){
+    var iv = $('inew').value.trim(); if (!iv){ $('ierr').textContent = 'Give the idea a title first'; return; }
+    t.disabled = true;
+    return api('addPost', {fields: {Title: iv, Pillar: $('ipil').value, Account: '@rach.hannon', Status: 'Idea'}}).then(function(r){ DATA.posts.push(r.post); render(); toast('Idea added'); }).catch(function(e2){ t.disabled = false; $('ierr').textContent = e2.message; });
+  }
+  if (t.id === 'nsave'){
+    var nv = $('nt').value.trim(); if (!nv){ $('nerr').textContent = 'Write a note first'; return; }
+    t.disabled = true;
+    return api('addNote', {text: nv}).then(function(r){ DATA.notes.unshift(r.note); render(); toast('Notes saved'); }).catch(function(e2){ t.disabled = false; $('nerr').textContent = e2.message; });
+  }
+  if (ds.acc || ds.rej){
+    var sid = ds.acc || ds.rej; t.disabled = true;
+    return api('decide', {id: sid, accept: !!ds.acc}).then(function(r){
+      DATA.suggestions = DATA.suggestions.map(function(s){ return s.id === sid ? r.suggestion : s; });
+      if (r.applied){ if (DATA.posts.some(function(p){ return p.id === r.applied.id; })) replacePost(r.applied); else DATA.posts.push(r.applied); }
+      render(); toast(ds.acc ? (r.applied ? 'Applied' : 'Accepted') : 'Rejected');
+    }).catch(function(e2){ t.disabled = false; toast(e2.message); });
+  }
+});
+document.addEventListener('input', function(e){
+  var map = {nt:'nerr', bnew:'berr', inew:'ierr', pw:'pwerr'};
+  if (map[e.target.id]) $(map[e.target.id]).textContent = '';
+});
+$('pw').addEventListener('keydown', function(e){ if (e.key === 'Enter') login(); });
+
+// ---------- startup ----------
+function load(manual){
+  return api('load').then(function(r){
+    DATA = r;
+    $('login').classList.add('hidden'); $('app').classList.remove('hidden');
+    if (!manual) st.w = thisWeek();
+    render(); if (manual) toast('Up to date');
+  }).catch(function(e){
+    if (e.status === 401){ store.del('cc_pw'); pw = ''; $('app').classList.add('hidden'); $('login').classList.remove('hidden'); $('pwerr').textContent = 'Wrong password. Try again.'; }
+    else { $('pwerr').textContent = e.message; toast(e.message); }
+    throw e;
+  });
+}
+function login(){
+  var v = $('pw').value.trim(); if (!v){ $('pwerr').textContent = 'Enter the password'; return; }
+  pw = v; $('pwgo').disabled = true;
+  load().then(function(){ store.set('cc_pw', pw); }).catch(function(){}).then(function(){ $('pwgo').disabled = false; });
+}
+if (pw) load().catch(function(){});
+})();
+</script>
+</body>
+</html>
