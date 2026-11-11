@@ -180,7 +180,7 @@ function cls(i){
   if (i.acc === 'wn') return 'SUB';
   return i.series || 'TASK';
 }
-function plabel(i){ if (i.series === 'WN' && i.no) return 'WORKING NOTES · No. ' + i.no; return PN[i.series] || ''; }
+function plabel(i){ if (i.series === 'WN' && i.no) return 'WORKING NOTES · No. ' + ('0' + i.no).slice(-2); return PN[i.series] || ''; }
 function match(i){
   var f = st.f;
   if (f === 'all') return true;
