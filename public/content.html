@@ -4,69 +4,78 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="theme-color" content="#EDE6D8">
+<meta name="theme-color" content="#FFFDF6">
 <title>Content calendar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:wght@700&family=Archivo:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,800&display=swap" rel="stylesheet">
 <style>
-:root{--bone:#EDE6D8;--paper:#F7F2E8;--ink:#22201C;--brick:#AE3B2C;--sand:#B99568;--umber:#6B5C4D;--line:#D9CDB8;--navy:#293148;--blue:#6B8AA8}
+/* Rach Hannon brand: Lilac & Navy (v2.0). Cream carries the surface; lanes: AI Stack = Navy, Brand Playbook = Lilac, Working Notes = Buttermilk. No black. Cherry = one detail only. */
+:root{--cream:#FFFDF6;--navy:#1F2347;--lilac:#D9CCF5;--butter:#FFF1C2;--slate:#4A4E6E;--cherry:#C8243A;--line:#E7E2F2;--soft:#F6F2FC;--sortd:#4782A8}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bone);color:var(--ink);font-family:Archivo,system-ui,sans-serif;-webkit-text-size-adjust:100%}
-body{padding:16px 16px 80px;max-width:1180px;margin:0 auto}
-.bd{font-family:'Bodoni Moda',Georgia,serif;font-weight:700}
-.lab{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--umber)}
-.meta{font-size:12px;color:var(--umber)}
+html,body{margin:0;background:var(--cream);color:var(--navy);font-family:'DM Sans',system-ui,sans-serif;-webkit-text-size-adjust:100%}
+body{padding:20px 20px 80px;max-width:1180px;margin:0 auto}
+.bd{font-weight:800;letter-spacing:-.03em}
+.lab{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--slate)}
+.meta{font-size:12px;color:var(--slate)}
 .row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .between{justify-content:space-between}
 button{font-family:inherit;cursor:pointer}
-.pill{font-size:13px;padding:6px 12px;border-radius:999px;border:.5px solid var(--sand);color:var(--ink);background:var(--paper)}
-.pill.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.btn{font-size:13px;border:.5px solid var(--ink);border-radius:6px;padding:6px 11px;background:var(--paper);color:var(--ink)}
-.btn.red{background:var(--brick);color:var(--paper);border-color:var(--brick)}
+.pill{font-size:13px;font-weight:500;padding:6px 13px;border-radius:999px;border:1px solid var(--line);color:var(--navy);background:#fff}
+.pill.on{background:var(--navy);color:var(--butter);border-color:var(--navy)}
+.btn{font-size:13px;font-weight:500;border:1px solid var(--navy);border-radius:8px;padding:6px 12px;background:#fff;color:var(--navy)}
+.btn.red{background:var(--navy);color:var(--butter);border-color:var(--navy)}
 .btn:disabled{opacity:.5}
-.tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;margin-top:12px}
+.tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px;margin-top:14px}
 .tabs .pill{white-space:nowrap}
-.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-top:12px}
-.col{background:var(--paper);border-radius:8px;padding:6px;min-height:140px}
-.col.shoot{outline:1.5px solid var(--brick)}
-.col.today{box-shadow:inset 0 0 0 2px var(--sand)}
-.c{font-size:12px;line-height:1.3;border-radius:6px;padding:6px;margin-top:5px;text-align:left;width:100%;display:block}
-.c.sel{box-shadow:0 0 0 2px var(--sand)}
-.BP{background:var(--brick);color:var(--paper);border:0}
-.WN{background:var(--bone);border:1px solid var(--brick);color:var(--ink)}
-.AI{background:var(--ink);color:var(--paper);border:0;border-left:3px solid var(--sand)}
-.ST{background:var(--paper);border:1px solid var(--ink);color:var(--ink)}
-.SD{background:var(--navy);color:#fff;border:0}
-.AUTO{border:1px dashed var(--blue);color:var(--navy);background:#fff}
-.TASK{background:#fff;color:var(--umber);border:.5px solid var(--line)}
-.LI{background:#E6EEF2;color:#1F3A4A;border:0}
-.SUB{background:#E9E3D6;color:#4A3F33;border:.5px solid var(--sand)}
-.IDEA{background:#fff;border:1px dashed var(--sand);color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:14px}
+.col{background:var(--soft);border-radius:10px;padding:7px;min-height:140px}
+.col.shoot{box-shadow:inset 0 0 0 1.5px var(--navy)}
+.col.today .lab::after{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--cherry);margin-left:6px;vertical-align:1px}
+.c{font-size:12px;line-height:1.35;border-radius:8px;padding:7px;margin-top:6px;text-align:left;width:100%;display:block}
+.c.sel{box-shadow:0 0 0 2px var(--navy)}
+.AI{background:var(--navy);color:var(--butter);border:0}
+.AI b{color:var(--lilac)}
+.BP{background:var(--lilac);color:var(--navy);border:0}
+.WN{background:var(--butter);color:var(--navy);border:0}
+.WN b{color:var(--slate)}
+.ST{background:#fff;border:1.5px solid var(--navy);color:var(--navy)}
+.SD{background:#fff;color:var(--navy);border:1.5px solid var(--sortd)}
+.AUTO{border:1px dashed var(--sortd);color:var(--slate);background:#fff}
+.TASK{background:#fff;color:var(--slate);border:1px solid var(--line)}
+.LI{background:#fff;color:var(--navy);border:1px solid var(--lilac)}
+.SUB{background:#fff;color:var(--navy);border:1px solid #F0DE9A}
+.IDEA{background:#fff;border:1px dashed var(--lilac);color:var(--navy)}
 .done{opacity:.45;text-decoration:line-through}
-.f2c{display:inline-block;font-size:10px;letter-spacing:.05em;background:var(--sand);color:var(--ink);border-radius:4px;padding:1px 4px;margin-bottom:2px}
-.ban{font-size:11px;text-align:center;border-radius:5px;padding:3px;margin-top:4px;border:0;width:100%}
-.panel{background:var(--paper);border-radius:10px;padding:14px;margin-top:12px}
-.box{background:#fff;border-radius:6px;padding:9px;font-size:13px;line-height:1.5;margin-top:6px;white-space:pre-wrap;word-wrap:break-word}
-textarea,input[type=text],input[type=url],input[type=password],input[type=date]{width:100%;font-family:inherit;font-size:15px;border-radius:6px;border:.5px solid var(--sand);padding:9px;background:#fff;color:var(--ink)}
+.f2c{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.06em;background:var(--lilac);color:var(--navy);border-radius:4px;padding:1px 5px;margin-bottom:3px}
+.AI .f2c{background:var(--butter)}
+.BP .f2c{background:#fff}
+.ban{font-size:11px;font-weight:600;letter-spacing:.04em;text-align:center;border-radius:6px;padding:4px;margin-top:5px;border:0;width:100%}
+.ban.shootban{background:var(--navy);color:var(--butter)}
+.ban.brollban{background:var(--butter);color:var(--navy)}
+.panel{background:var(--soft);border-radius:12px;padding:16px;margin-top:14px}
+.panel.dark{background:var(--navy);color:var(--butter)}
+.panel.dark .lab{color:var(--lilac)}
+.box{background:#fff;border-radius:8px;padding:10px;font-size:13px;line-height:1.55;margin-top:6px;white-space:pre-wrap;word-wrap:break-word}
+textarea,input[type=text],input[type=url],input[type=password],input[type=date],select{width:100%;font-family:inherit;font-size:15px;border-radius:8px;border:1px solid var(--line);padding:9px;background:#fff;color:var(--navy)}
 textarea{min-height:110px}
-.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;padding:9px 0;border-top:.5px solid #E5DACA;cursor:pointer}
-.chk input{width:20px;height:20px;margin-top:1px;flex:none}
-.grp{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--brick);margin-top:14px}
-.late{color:var(--brick)}
-.err{font-size:13px;color:#A32D2D;min-height:16px;margin-top:4px}
+.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}
+.chk input{width:20px;height:20px;margin-top:1px;flex:none;accent-color:var(--navy)}
+.grp{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--slate);margin-top:16px}
+.late{color:var(--cherry)}
+.err{font-size:13px;color:var(--cherry);min-height:16px;margin-top:4px}
 table.ov{width:100%;border-collapse:collapse;font-size:13px}
-table.ov td{padding:7px 4px;border-top:.5px solid var(--line);vertical-align:top}
-.bar{display:flex;height:9px;border-radius:5px;overflow:hidden;margin-top:6px}
+table.ov td{padding:8px 4px;border-top:1px solid var(--line);vertical-align:top}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;margin-top:6px;gap:2px}
 #toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:9;pointer-events:none}
-#toast span{background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:999px;font-size:13px}
+#toast span{background:var(--navy);color:var(--butter);padding:8px 14px;border-radius:999px;font-size:13px}
 #login{max-width:360px;margin:12vh auto 0}
 .hidden{display:none!important}
 @media (max-width:760px){
-  body{padding:12px 12px 80px}
+  body{padding:14px 14px 80px}
   .grid{grid-template-columns:1fr}
   .col{min-height:0}
   .col.empty{display:none}
-  .c{font-size:14px;padding:9px}
+  .c{font-size:14px;padding:10px}
 }
 </style>
 </head>
@@ -189,7 +198,7 @@ var FILTERS = [['all','All'],['rach','@rach.hannon'],['AI','AI Stack'],['WN','Wo
 
 function card(i){
   var kindTxt = (i.status === 'Idea' && !i.raw.Kind) ? '' : ' · ' + esc(i.kind);
-  var pre = i.acc === 'rach' ? '<b>' + esc(plabel(i) || 'Idea') + '</b>' + kindTxt + '<br>' : i.acc === 'sortd' ? 'Sortd ' + esc(i.kind) + ' · ' : i.acc === 'li' ? 'LinkedIn · ' : '';
+  var pre = i.acc === 'rach' ? '<b>' + esc(plabel(i) || 'Idea') + '</b>' + kindTxt + '<br>' : i.acc === 'sortd' ? 'Sortd ' + esc(i.kind) + ' · ' : (i.acc === 'li' && !/^linkedin/i.test(i.title)) ? 'LinkedIn · ' : '';
   var f2 = (i.acc === 'rach' && isF2C(i)) ? '<span class="f2c">TO CAMERA</span><br>' : '';
   var dn = (i.status === 'Posted' || i.status === 'Done') ? ' done' : '';
   return '<button class="c ' + cls(i) + (st.sel === i.id ? ' sel' : '') + dn + '" data-id="' + esc(i.id) + '">' + f2 + pre + esc(i.title) + '</button>';
@@ -216,7 +225,7 @@ function renderWeek(){
   for (var o = 0; o < 7; o++){
     var d = add(wkStart(st.w), o);
     var its = all.filter(function(i){ return i.date === d && match(i); });
-    var extra = (o === 2 ? '<button class="ban BP" data-v="shoot">Shoot day</button>' : '') + (o >= 5 ? '<button class="ban" style="background:var(--sand);color:var(--ink)" data-v="broll">B-roll</button>' : '');
+    var extra = (o === 2 ? '<button class="ban shootban" data-v="shoot">Shoot day</button>' : '') + (o >= 5 ? '<button class="ban brollban" data-v="broll">B-roll</button>' : '');
     h += '<div class="col' + (o === 2 ? ' shoot' : '') + (d === today() ? ' today' : '') + (its.length || extra ? '' : ' empty') + '"><div class="lab">' + fmt(d) + (d === today() ? ' · today' : '') + '</div>' + extra + its.map(card).join('') + '</div>';
   }
   return h + '</div>';
@@ -234,8 +243,8 @@ function renderShoot(){
   its.forEach(function(i){ i.shots.split('\n').filter(Boolean).forEach(function(s, k){ all.push({i:i, s:s, k:k}); }); });
   var groups = [['Face to camera · back to back, same outfit and light', 0], ['Screen recordings', 1], ['Hands, doorway and the rest', 2]];
   var h = '<div class="panel"><div class="bd" style="font-size:18px">Shoot day · ' + fmt(wed) + '</div>' +
-    '<div class="meta" style="margin-top:4px">Blazer over a plain tee · window light · rear camera, exposure locked · one brick-red detail</div>' +
-    '<div style="font-size:13px;color:var(--brick);margin-top:4px">Keep off camera: API keys, Airtable IDs, emails, WhatsApp names, Netlify settings</div>';
+    '<div class="meta" style="margin-top:4px">White or plain tee, light denim · natural window light · rear camera, exposure locked · the red cap is the one Cherry detail</div>' +
+    '<div style="font-size:13px;color:var(--slate);margin-top:4px"><b>Keep off camera:</b> API keys, Airtable IDs, emails, WhatsApp names, Netlify settings</div>';
   if (!all.length) return h + '<div class="box">Nothing to film this Wednesday.</div></div>';
   groups.forEach(function(g){
     var xs = all.filter(function(x){ return shotGroup(x.s) === g[1]; });
@@ -275,7 +284,7 @@ function renderOverview(){
   var t = r.length || 1, c = function(k){ return r.filter(function(i){ return i.series === k; }).length; };
   var pct = function(k){ return Math.round(c(k) / t * 100); };
   var h = '<div class="panel"><div class="row between"><span class="lab">Pillar mix · ' + r.length + ' posts</span><span class="meta">Target 40 / 30 / 30</span></div>' +
-    '<div class="bar"><div style="width:' + pct('AI') + '%;background:var(--ink)"></div><div style="width:' + pct('WN') + '%;background:var(--bone);border:1px solid var(--brick)"></div><div style="width:' + pct('BP') + '%;background:var(--brick)"></div></div>' +
+    '<div class="bar"><div style="width:' + pct('AI') + '%;background:var(--navy)"></div><div style="width:' + pct('WN') + '%;background:#F0DE9A"></div><div style="width:' + pct('BP') + '%;background:var(--lilac)"></div></div>' +
     '<div class="row meta" style="margin-top:6px;gap:14px"><span>AI Stack ' + c('AI') + ' (' + pct('AI') + '%)</span><span>Working Notes ' + c('WN') + ' (' + pct('WN') + '%)</span><span>Brand Playbook ' + c('BP') + ' (' + pct('BP') + '%)</span></div></div>';
   h += '<div class="panel"><table class="ov">';
   for (var w = 1; w <= WEEKS; w++){
@@ -311,13 +320,13 @@ function renderSug(){
     if (pa !== pb) return pa - pb; return (a['Week of'] || '') < (b['Week of'] || '') ? 1 : -1;
   }).slice(0, 40);
   var h = '';
-  if (sum) h += '<div class="panel" style="background:var(--ink);color:var(--paper)"><div class="lab" style="color:var(--sand)">Weekly summary' + (sum['Week of'] ? ' · ' + fmt(sum['Week of']) : '') + '</div><div style="font-size:14px;margin-top:6px;line-height:1.55;white-space:pre-wrap">' + esc(sum.Proposed || sum.Why || sum.Title) + '</div></div>';
+  if (sum) h += '<div class="panel dark"><div class="lab">Weekly summary' + (sum['Week of'] ? ' · ' + fmt(sum['Week of']) : '') + '</div><div style="font-size:14px;margin-top:6px;line-height:1.55;white-space:pre-wrap">' + esc(sum.Proposed || sum.Why || sum.Title) + '</div></div>';
   if (!rest.length) return h + '<div class="panel"><div class="meta">No suggestions yet. The first review runs on Sunday at 9:45pm.</div></div>';
   rest.forEach(function(s){
     var status = s.Status || 'Pending';
     var post = s.Post && s.Post[0] ? DATA.posts.filter(function(p){ return p.id === s.Post[0]; })[0] : null;
     h += '<div class="panel" style="' + (status !== 'Pending' ? 'opacity:.55' : '') + '"><div class="row between"><b style="font-size:14px">' + esc(s.Title) + '</b><span class="lab">' + esc(s.Type || '') + ' · ' + esc(status) + '</span></div>' +
-      (post ? '<div class="meta" style="margin-top:4px">' + esc(post.Title) + (s.Field ? ' · ' + esc(s.Field) : '') + '</div>' + (s.Field ? '<div class="box" style="color:var(--umber)">Now: ' + esc(post[s.Field] || '(empty)') + '</div>' : '') : '') +
+      (post ? '<div class="meta" style="margin-top:4px">' + esc(post.Title) + (s.Field ? ' · ' + esc(s.Field) : '') + '</div>' + (s.Field ? '<div class="box" style="color:var(--slate)">Now: ' + esc(post[s.Field] || '(empty)') + '</div>' : '') : '') +
       '<div class="box">' + (post && s.Field ? 'Proposed: ' : '') + esc(s.Proposed || '') + '</div>' +
       (s.Why ? '<div class="meta" style="margin-top:6px">' + esc(s.Why) + '</div>' : '') +
       (s.Source ? '<div class="meta" style="margin-top:4px">Source: ' + esc(s.Source) + '</div>' : '') +
