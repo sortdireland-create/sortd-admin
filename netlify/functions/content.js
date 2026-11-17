@@ -22,7 +22,7 @@ const T = {
 const POST_FIELDS = new Set([
   'Title', 'Date', 'Status', 'Hook', 'Brief', 'Shot list', 'B-roll needed', 'Caption', 'Hashtags',
   'Alt text', 'Ends on', 'Checks', 'Post link', 'Results', 'Film day',
-  'Account', 'Kind', 'Pillar', 'Week',
+  'Account', 'Kind', 'Pillar', 'Week', 'My copy',
 ]);
 // Fields a suggestion may change when Rachel accepts it.
 const SUGGESTABLE = new Set(['Title', 'Date', 'Hook', 'Brief', 'Shot list', 'B-roll needed', 'Caption', 'Ends on', 'Checks']);

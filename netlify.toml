@@ -25,6 +25,17 @@
   status = 200
 
 [[redirects]]
+  from = "/content-classic"
+  to = "/content-classic.html"
+  status = 200
+
+# Always fetch the latest calendar page, so phones don't hold on to an old copy.
+[[headers]]
+  for = "/content*"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[redirects]]
   from = "/admin/*"
   to = "/admin.html"
   status = 200
