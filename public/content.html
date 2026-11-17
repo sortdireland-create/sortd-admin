@@ -20,6 +20,7 @@ button{font-family:inherit;cursor:pointer;color:inherit}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .between{justify-content:space-between}
 .btn{font-size:14px;font-weight:500;border:1px solid var(--navy);border-radius:9px;padding:8px 13px;background:#fff}
+a.btn{color:var(--navy);display:inline-block}
 .btn.go{background:var(--navy);color:var(--butter)}
 .btn.sm{font-size:12px;padding:5px 10px}
 .btn:disabled{opacity:.5}
@@ -107,6 +108,7 @@ var store = {
 };
 var pw = store.get('cc_pw') || '';
 var DATA = {posts:[], today:null};
+var NOTION = 'https://app.notion.com/p/41a0aab32d8281948f34c1c3f2c0dd2e';
 var st = {view:'week', monday:null, open:null, checks: JSON.parse(store.get('cc_checks2') || '{}')};
 
 function $(id){ return document.getElementById(id); }
@@ -199,17 +201,21 @@ function head(p){
   return '<div class="row between"><span class="lab">' + esc(accLabel(p)) + ' · ' + esc(p.Kind || 'Post') + '</span><span class="lab">' + fmt(p.Date) + ' · ' + when(p.Date) + '</span></div>' +
     '<div style="font-size:17px;font-weight:700;margin-top:4px">' + esc(p.Title) + '</div>' + (p.Hook ? '<div class="meta" style="margin-top:3px">Hook: ' + esc(p.Hook) + '</div>' : '');
 }
+function draftBox(p){
+  var d = p['My copy'];
+  if (!d) return '<div class="meta" style="margin-top:8px">No draft yet.</div>';
+  var short = d.length > 280 ? d.slice(0, 280) + '…' : d;
+  return '<div class="lab" style="margin-top:10px">Your draft so far</div><div class="box" style="font-size:13px">' + esc(short) + '</div>';
+}
 function renderWrite(){
   var list = inStage('write').concat(inStage('film')).sort(byDate);
-  var h = '<div class="panel"><b>Write the rough version. I do the rest.</b><div class="meta" style="margin-top:4px">Bullet points, a voice note pasted in, half a sentence: all fine. Hit <b>Send to Claude</b> and I\'ll polish it into the caption, or build the carousel slides, in your brand.</div></div>';
+  var h = '<div class="panel"><b>Write in Notion. Plan here.</b><div class="meta" style="margin-top:4px">Your drafts live in your Notion topics page, under each post title. Tick a post\'s box in Notion when it\'s done and it moves to <b>With Claude</b>. Drafts sync here every night.</div><div class="row" style="margin-top:8px"><a class="btn go" href="' + NOTION + '" target="_blank" rel="noopener" style="text-decoration:none">Open my Notion topics</a></div></div>';
   if (!list.length) return h + '<div class="panel">Nothing to write. 🎉</div>';
   return h + grouped(list, function(p){
     var b = brand(p), sg = stage(p);
-    return '<div class="item ' + b + '">' + head(p) + '<div style="margin-top:6px">' + badge(sg) + '</div>' +
-      (p.Brief ? '<div class="box" style="font-size:13px">' + esc(p.Brief) + '</div>' : '') +
+    return '<div class="item ' + b + '">' + head(p) + '<div style="margin-top:6px">' + badge(sg) + (p['My copy'] && sg === 'write' ? ' <span class="badge" style="background:var(--soft)">Draft started</span>' : '') + '</div>' +
       (sg === 'film' ? '<div class="meta" style="margin-top:8px">This one\'s scripted. Film it, then send the clips to Claude.</div><div class="row" style="margin-top:8px"><button class="btn sm" data-open="' + esc(p.id) + '">See script</button><button class="btn sm go" data-filmed="' + esc(p.id) + '">Filmed: send to Claude</button></div>' :
-       '<textarea id="mc-' + esc(p.id) + '" placeholder="Your rough copy for this ' + esc((p.Kind || 'post').toLowerCase()) + '" style="margin-top:8px">' + esc(p['My copy'] || '') + '</textarea>' +
-       '<div class="row" style="margin-top:8px"><button class="btn go" data-send="' + esc(p.id) + '">Send to Claude</button><button class="btn" data-draft="' + esc(p.id) + '">Save draft</button></div>') +
+       draftBox(p) + '<div class="row" style="margin-top:8px"><a class="btn sm" href="' + NOTION + '" target="_blank" rel="noopener" style="text-decoration:none">Write in Notion</a><button class="btn sm" data-open="' + esc(p.id) + '">Brief</button></div>') +
       '</div>';
   });
 }
@@ -244,9 +250,8 @@ function openSheet(){
     '<div style="font-size:20px;font-weight:800;margin-top:6px;letter-spacing:-.02em">' + esc(p.Title) + '</div>' +
     '<div class="row" style="margin-top:6px"><span class="meta">' + (p.Date ? fmt(p.Date) + ' · ' + when(p.Date) : 'No date') + '</span>' + badge(sg) + '</div>';
   if (sg === 'write'){
-    h += sec(p, 'Brief', 'Brief') + sec(p, 'Hook', 'Hook') +
-      '<div class="lab" style="margin-top:14px">Your copy</div><textarea id="mc-' + esc(p.id) + '" style="margin-top:6px" placeholder="Rough is fine">' + esc(p['My copy'] || '') + '</textarea>' +
-      '<div class="row" style="margin-top:8px"><button class="btn go" data-send="' + esc(p.id) + '">Send to Claude</button><button class="btn" data-draft="' + esc(p.id) + '">Save draft</button></div>';
+    h += sec(p, 'Brief', 'Brief') + sec(p, 'Hook', 'Hook') + draftBox(p) +
+      '<div class="row" style="margin-top:10px"><a class="btn go" href="' + NOTION + '" target="_blank" rel="noopener" style="text-decoration:none">Write in Notion</a></div><div class="meta" style="margin-top:6px">Tick the box next to this title in Notion when it\'s done.</div>';
   } else if (sg === 'film'){
     h += sec(p, 'Shot list', 'Script') + sec(p, 'B-roll needed', 'B-roll') + '<div class="row" style="margin-top:12px"><button class="btn go" data-filmed="' + esc(p.id) + '">Filmed: send to Claude</button></div>';
   } else if (sg === 'claude'){
