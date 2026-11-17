@@ -141,7 +141,7 @@ var store = {
 };
 var pw = store.get('cc_pw') || '';
 var DATA = {posts:[], broll:[], notes:[], suggestions:[], today: null};
-var st = {view:'cal', cal:'week', w:1, sf:'todo', sg:'post', sel:null, bf:'todo', editing:null, shots: JSON.parse(store.get('cc_shots') || '{}')};
+var st = {tab:null, dates:false, view:'cal', cal:'week', w:1, sf:'todo', sg:'post', sel:null, bf:'todo', editing:null, shots: JSON.parse(store.get('cc_shots') || '{}')};
 
 function $(id){ return document.getElementById(id); }
 function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -295,7 +295,7 @@ function renderScripts(){
 }
 
 function renderWeek(){
-  var all = scheduled().concat(automations(st.w)), h = '<div class="grid">';
+  var all = scheduled().concat(automations(st.w)), h = renderUpNext() + '<div class="grid">';
   for (var o = 0; o < 7; o++){
     var d = add(wkStart(st.w), o);
     var its = all.filter(function(i){ return i.date === d; });
@@ -387,6 +387,45 @@ function renderSug(){
   return h;
 }
 
+// What has to be made for each format. [tab name, Airtable field or status step, kind]
+var MAKE = {
+  Reel: [['Hook','Hook','f'],['Script','Shot list','f'],['B-roll','B-roll needed','f'],['Film','Filmed','s'],['Edit','Edited','s'],['Caption','Caption','f'],['Hashtags','Hashtags','f'],['Alt text','Alt text','f']],
+  Carousel: [['Hook','Hook','f'],['Slide copy','Shot list','f'],['Design','Edited','s'],['Caption','Caption','f'],['Hashtags','Hashtags','f'],['Alt text','Alt text','f']],
+  Story: [['Frames','Shot list','f'],['Film','Filmed','s']],
+  Post: [['Hook','Hook','f'],['Copy','Caption','f'],['Visual','Edited','s'],['Hashtags','Hashtags','f']],
+  Newsletter: [['Subject line','Hook','f'],['Copy','Caption','f'],['Build','Edited','s']],
+  Task: []
+};
+var STEP_DONE = {Filmed:'Filmed', Edited:'Edited'};
+function makeList(i){
+  var m = MAKE[i.kind] || MAKE.Post;
+  if (i.kind === 'Story' && !isF2C(i) && !i.raw['B-roll needed']) m = m.filter(function(x){ return x[0] !== 'Film'; });
+  return m.map(function(x){
+    var done = x[2] === 'f' ? !!(i.raw[x[1]] && String(i.raw[x[1]]).trim()) : (STEPS.indexOf(i.status) >= STEPS.indexOf(x[1]) || i.status === 'Done');
+    return {tab:x[0], key:x[1], kind:x[2], done:done};
+  });
+}
+function toMake(i){ return makeList(i).filter(function(x){ return !x.done; }); }
+function daysTo(d){ return Math.round((ms(d) - ms(today())) / 864e5); }
+function when(d){ var n = daysTo(d); return n === 0 ? 'today' : n === 1 ? 'tomorrow' : n === -1 ? 'yesterday' : n > 0 ? 'in ' + n + ' days' : Math.abs(n) + ' days ago'; }
+function accOf(i){ return {rach:'@rach.hannon', sortd:'Sortd', li:'LinkedIn', wn:'Substack', task:'Task'}[i.acc]; }
+function lines(v){ return String(v || '').split('\n').map(function(x){ return x.trim(); }).filter(Boolean); }
+
+function renderUpNext(){
+  var t = today(), end = add(t, 7);
+  var list = scheduled().filter(function(i){ return i.date >= t && i.date <= end && i.acc !== 'task' && ['Posted','Done','Skipped'].indexOf(i.status) < 0; })
+    .sort(function(a, b){ return a.date < b.date ? -1 : 1; });
+  var h = '<div class="panel"><div class="row between"><span class="bd" style="font-size:18px">Going out next 7 days · ' + list.length + '</span></div>';
+  if (!list.length) return h + '<div class="meta" style="margin-top:6px">Nothing due this week.</div></div>';
+  list.forEach(function(i){
+    var left = toMake(i);
+    var badge = left.length ? '<span class="tag" style="background:var(--butter);color:var(--navy)">' + left.length + ' to make</span>' : '<span class="tag posted">Ready to post</span>';
+    h += '<button class="li-row' + (st.sel === i.id ? ' sel' : '') + '" data-id="' + esc(i.id) + '"><span class="dt">' + fmt(i.date).replace(' ', '<br>') + '</span><span style="flex:1"><span class="lab">' + esc(accOf(i)) + ' · ' + esc(i.kind) + '</span><br><b>' + esc(i.title) + '</b> ' + badge +
+      (left.length ? '<div class="hk">Still to make: ' + left.map(function(x){ return esc(x.tab); }).join(', ') + '</div>' : '') + '</span></button>';
+  });
+  return h + '</div>';
+}
+
 function renderDetail(){
   var d = $('detail');
   if (!st.sel){ d.innerHTML = ''; return; }
@@ -398,26 +437,81 @@ function renderDetail(){
   }
   var p = DATA.posts.filter(function(x){ return x.id === st.sel; })[0];
   if (!p){ d.innerHTML = ''; return; }
-  var i = norm(p);
-  var steps = i.kind === 'Task' ? ['Planned','Done'] : STEPS;
-  var accName = {rach:'@rach.hannon', sortd:'Sortd', li:'LinkedIn', wn:'Substack', task:'Task'}[i.acc];
-  var sec = function(name, canCopy){
-    var v = p[name];
-    if (st.editing === name) return '<div class="lab" style="margin-top:12px">' + name + '</div><textarea id="edtext">' + esc(v || '') + '</textarea><div class="row" style="margin-top:6px"><button class="btn red" data-save="' + name + '">Save</button><button class="btn" data-cancel>Cancel</button></div>';
-    if (!v) return '';
-    return '<div class="row between" style="margin-top:12px"><span class="lab">' + name + '</span><div class="row">' + (canCopy ? '<button class="btn" data-cp="' + name + '">Copy</button>' : '') + '<button class="btn" data-edit="' + name + '">Edit</button></div></div><div class="box">' + esc(v) + '</div>';
-  };
-  var missing = EDITABLE.filter(function(n){ return !p[n] && st.editing !== n; });
-  d.innerHTML = '<div class="panel" id="dpanel"><div class="row between"><span class="lab">' + esc(accName) + ' · ' + (plabel(i) ? esc(plabel(i)) + ' · ' : '') + esc(i.kind) + (i.date ? ' · ' + fmt(i.date) : '') + '</span><button class="btn" data-close>Close</button></div>' +
-    '<div class="bd" style="font-size:19px;margin-top:6px">' + esc(i.title) + '</div>' +
-    '<div class="row" style="margin-top:10px">' + steps.map(function(s){ return '<button class="pill' + (i.status === s ? ' on' : '') + '" data-st="' + s + '">' + s + '</button>'; }).join('') + '</div>' +
-    '<div class="row" style="margin-top:10px"><span class="meta">Posts</span><input type="date" id="pdate" value="' + esc(i.date || '') + '" style="width:auto"><span class="meta">Film</span><input type="date" id="pfilm" value="' + esc(i.film || '') + '" style="width:auto"><button class="btn" id="dsave">Save dates</button></div>' +
-    sec('Hook', true) + sec('Brief', false) + sec('Shot list', false) + sec('B-roll needed', false) + sec('Caption', true) + sec('Hashtags', true) + sec('Alt text', true) + sec('Ends on', false) + sec('Checks', false) +
-    (missing.length ? '<div class="row" style="margin-top:12px"><span class="meta">Add</span>' + missing.map(function(n){ return '<button class="btn" data-edit="' + n + '">' + n + '</button>'; }).join('') + '</div>' : '') +
-    (i.kind !== 'Task' ? '<div class="lab" style="margin-top:14px">After posting</div><input type="url" id="plink" placeholder="Paste the post link" value="' + esc(i.link) + '" style="margin-top:4px"><textarea id="presults" placeholder="Results: saves, sends, profile visits, follows" style="min-height:70px;margin-top:6px">' + esc(p.Results || '') + '</textarea><button class="btn red" id="psave" style="margin-top:6px">Save and mark posted</button>' : '') +
+  var i = norm(p), mk = makeList(i), left = mk.filter(function(x){ return !x.done; });
+  var refs = [];
+  if (p.Brief) refs.push('Brief');
+  if (p['Ends on']) refs.push('Ends on');
+  if (p.Checks) refs.push('Before posting');
+  if (i.kind !== 'Task') refs.push('Posted');
+  var all = mk.map(function(x){ return x.tab; }).concat(refs);
+  if (!st.tab || all.indexOf(st.tab) < 0) st.tab = left.length ? left[0].tab : (refs.indexOf('Before posting') >= 0 ? 'Before posting' : all[0]);
+  var steps = i.kind === 'Task' ? ['Planned','Done','Skipped'] : STEPS.concat(['Skipped']);
+
+  // Schedule block
+  var sched = '<div class="panel dark" style="margin-top:10px"><div class="row between"><div><div class="lab">' + (i.date ? (daysTo(i.date) < 0 ? 'Was due' : 'Goes out') : 'Not scheduled') + '</div>' +
+    '<div class="bd" style="font-size:22px;margin-top:2px">' + (i.date ? fmt(i.date) + ' <span style="font-size:14px;font-weight:500;color:var(--lilac)">· ' + when(i.date) + '</span>' : 'No date yet') + '</div>' +
+    '<div style="font-size:13px;margin-top:4px;color:var(--lilac)">' + esc(accOf(i)) + ' · ' + esc(i.kind) + (i.film ? ' · film ' + fmt(i.film) : '') + '</div></div>' +
+    '<div style="text-align:right"><select id="pstatus" style="width:auto;font-size:13px;padding:6px">' + steps.map(function(s){ return '<option' + (i.status === s ? ' selected' : '') + '>' + s + '</option>'; }).join('') + '</select>' +
+    '<div><button class="btn" id="chdates" style="margin-top:6px;background:transparent;color:var(--butter);border-color:var(--lilac)">Change dates</button></div></div></div>' +
+    (st.dates ? '<div class="row" style="margin-top:10px"><span style="font-size:12px">Posts</span><input type="date" id="pdate" value="' + esc(i.date || '') + '" style="width:auto"><span style="font-size:12px">Film</span><input type="date" id="pfilm" value="' + esc(i.film || '') + '" style="width:auto"><button class="btn" id="dsave">Save dates</button></div>' : '') +
     '</div>';
+
+  // To-make tabs
+  var prog = mk.length ? '<div class="row between" style="margin-top:14px"><span class="lab">To make · ' + (mk.length - left.length) + ' of ' + mk.length + ' done</span>' + (left.length ? '' : '<span class="tag posted">All made</span>') + '</div>' +
+    '<div class="bar">' + mk.map(function(x){ return '<div style="flex:1;background:' + (x.done ? 'var(--navy)' : 'var(--line)') + '"></div>'; }).join('') + '</div>' : '';
+  var tabBtn = function(name, done, ref){
+    var on = st.tab === name;
+    return '<button class="pill' + (on ? ' on' : '') + '" data-tab="' + esc(name) + '" style="' + (ref && !on ? 'border-style:dashed' : '') + '">' + (ref ? '' : (done ? '✓ ' : '○ ')) + esc(name) + '</button>';
+  };
+  var tabs = '<div class="row" style="margin-top:10px">' + mk.map(function(x){ return tabBtn(x.tab, x.done); }).join('') + '</div>' +
+    (refs.length ? '<div class="row" style="margin-top:6px"><span class="meta">Reference</span>' + refs.map(function(r){ return tabBtn(r, false, true); }).join('') + '</div>' : '');
+
+  d.innerHTML = '<div class="panel" id="dpanel"><div class="row between"><span class="lab">' + esc(accOf(i)) + (plabel(i) ? ' · ' + esc(plabel(i)) : '') + '</span><button class="btn" data-close>Close</button></div>' +
+    '<div class="bd" style="font-size:20px;margin-top:6px">' + esc(i.title) + '</div>' +
+    (p.Hook && st.tab !== 'Hook' && st.tab !== 'Subject line' ? '<div class="meta" style="margin-top:4px">' + esc(p.Hook) + '</div>' : '') +
+    sched + prog + tabs + '<div style="margin-top:10px">' + tabBody(p, i, mk) + '</div></div>';
   if (window.innerWidth > 760) d.scrollIntoView({block:'nearest', behavior:'smooth'}); else document.getElementById('dpanel').scrollIntoView({block:'start', behavior:'smooth'});
 }
+
+var HINT = {
+  'Hook':'The first line or cover text. Under 10 words.', 'Subject line':'The email subject line.',
+  'Shot list':'One line per shot or slide.', 'B-roll needed':'One line per shot. These feed the B-roll list.',
+  'Caption':'Hook line first, one call to action.', 'Hashtags':'Branded, local, category, broad.', 'Alt text':'Describe what is on screen for screen readers.'
+};
+function tabBody(p, i, mk){
+  var item = mk.filter(function(x){ return x.tab === st.tab; })[0];
+  if (item && item.kind === 'f'){
+    var name = item.key, v = p[name];
+    if (st.editing === name || !v){
+      return '<div class="lab">' + esc(item.tab) + (v ? '' : ' · not written yet') + '</div><div class="meta" style="margin-top:2px">' + esc(HINT[name] || '') + '</div>' +
+        '<textarea id="edtext" style="margin-top:6px" placeholder="Write the ' + esc(item.tab.toLowerCase()) + ' here">' + esc(v || '') + '</textarea>' +
+        '<div class="row" style="margin-top:6px"><button class="btn red" data-save="' + esc(name) + '">Save</button>' + (v ? '<button class="btn" data-cancel>Cancel</button>' : '') + '</div>';
+    }
+    return '<div class="row between"><span class="lab">' + esc(item.tab) + ' · done</span><div class="row"><button class="btn" data-cp="' + esc(name) + '">Copy</button><button class="btn" data-edit="' + esc(name) + '">Edit</button></div></div><div class="box">' + esc(v) + '</div>';
+  }
+  if (item && item.kind === 's'){
+    var verb = {Film:'filming', Edit:'editing', Design:'designing the slides', Visual:'making the visual', Build:'building it'}[item.tab] || 'it';
+    var ref = '';
+    if (item.tab === 'Film'){
+      if (p['Shot list']) ref += '<div class="lab" style="margin-top:12px">Script</div><div class="box">' + esc(p['Shot list']) + '</div>';
+      if (p['B-roll needed']) ref += '<div class="lab" style="margin-top:12px">B-roll</div><div class="box">' + esc(p['B-roll needed']) + '</div>';
+    } else if (p.Brief) ref += '<div class="lab" style="margin-top:12px">Brief</div><div class="box">' + esc(p.Brief) + '</div>';
+    if (item.done) return '<div class="box"><b>Done.</b> Status is ' + esc(i.status) + '.</div>' + ref;
+    return '<div class="box">Still to do: ' + esc(verb) + '.</div><button class="btn red" data-step="' + esc(item.key) + '" style="margin-top:8px">Mark ' + esc(item.tab.toLowerCase()) + ' done</button>' + ref;
+  }
+  if (st.tab === 'Brief') return '<div class="row between"><span class="lab">Brief</span><button class="btn" data-edit="Brief">Edit</button></div>' + (st.editing === 'Brief' ? editBox('Brief', p.Brief) : '<div class="box">' + esc(p.Brief) + '</div>');
+  if (st.tab === 'Ends on') return '<div class="row between"><span class="lab">Ends on</span><button class="btn" data-edit="Ends on">Edit</button></div>' + (st.editing === 'Ends on' ? editBox('Ends on', p['Ends on']) : '<div class="box">' + esc(p['Ends on']) + '</div>');
+  if (st.tab === 'Before posting'){
+    if (st.editing === 'Checks') return '<span class="lab">Before posting</span>' + editBox('Checks', p.Checks);
+    return '<div class="row between"><span class="lab">Before posting</span><button class="btn" data-edit="Checks">Edit</button></div>' +
+      lines(p.Checks).map(function(c, k){ var key = i.id + '-c' + k, on = !!st.shots[key]; return '<div class="chk" data-shot="' + esc(key) + '"><input type="checkbox"' + (on ? ' checked' : '') + '><span class="' + (on ? 'done' : '') + '">' + esc(c) + '</span></div>'; }).join('');
+  }
+  if (st.tab === 'Posted'){
+    return '<span class="lab">After posting</span><input type="url" id="plink" placeholder="Paste the post link" value="' + esc(i.link) + '" style="margin-top:4px"><textarea id="presults" placeholder="Results: saves, sends, profile visits, follows" style="min-height:70px;margin-top:6px">' + esc(p.Results || '') + '</textarea><button class="btn red" id="psave" style="margin-top:6px">Save and mark posted</button>';
+  }
+  return '';
+}
+function editBox(name, v){ return '<textarea id="edtext" style="margin-top:6px">' + esc(v || '') + '</textarea><div class="row" style="margin-top:6px"><button class="btn red" data-save="' + esc(name) + '">Save</button><button class="btn" data-cancel>Cancel</button></div>'; }
 
 // ---------- writes ----------
 function replacePost(post){ DATA.posts = DATA.posts.map(function(p){ return p.id === post.id ? post : p; }); }
@@ -446,11 +540,14 @@ document.addEventListener('click', function(e){
   if (t.id === 'scopy') return copy(scriptText(scriptPosts()), 'Scripts');
   if (ds.bf){ st.bf = ds.bf; return render(); }
   if (ds.w){ st.w = +ds.w; st.view = 'cal'; st.cal = 'week'; return render(); }
-  if (ds.id){ st.sel = ds.id; st.editing = null; return render(); }
+  if (ds.id){ st.sel = ds.id; st.editing = null; st.tab = null; st.dates = false; return render(); }
+  if (ds.tab){ st.tab = ds.tab; st.editing = null; return renderDetail(); }
+  if (t.id === 'chdates'){ st.dates = !st.dates; return renderDetail(); }
+  if (ds.step){ var stp = DATA.posts.filter(function(x){ return x.id === st.sel; })[0]; stp.Status = ds.step; render(); return savePost(st.sel, {Status: ds.step}, ds.step); }
   if (ds.close !== undefined){ st.sel = null; st.editing = null; return render(); }
   if (ds.edit){ st.editing = ds.edit; renderDetail(); var ta = $('edtext'); if (ta) ta.focus(); return; }
   if (ds.cancel !== undefined){ st.editing = null; return renderDetail(); }
-  if (ds.save){ var f = {}; f[ds.save] = $('edtext').value; return savePost(st.sel, f); }
+  if (ds.save){ var f = {}; f[ds.save] = $('edtext').value; var cur = st.tab; return savePost(st.sel, f).then(function(){ var p2 = DATA.posts.filter(function(x){ return x.id === st.sel; })[0]; var nx = p2 ? toMake(norm(p2))[0] : null; st.tab = (nx && cur && f[ds.save]) ? nx.tab : cur; renderDetail(); }); }
   if (ds.cp){ var p = DATA.posts.filter(function(x){ return x.id === st.sel; })[0]; return copy(p[ds.cp] || '', ds.cp); }
   if (ds.st){ var sp = DATA.posts.filter(function(x){ return x.id === st.sel; })[0]; sp.Status = ds.st; render(); return savePost(st.sel, {Status: ds.st}, 'Status: ' + ds.st); }
   if (t.id === 'dsave'){ return savePost(st.sel, {'Date': $('pdate').value || null, 'Film day': $('pfilm').value || null, 'Status': ($('pdate').value && DATA.posts.filter(function(x){ return x.id === st.sel; })[0].Status === 'Idea') ? 'Planned' : undefined}, 'Dates saved'); }
@@ -483,6 +580,9 @@ document.addEventListener('click', function(e){
       render(); toast(ds.acc ? (r.applied ? 'Applied' : 'Accepted') : 'Rejected');
     }).catch(function(e2){ t.disabled = false; toast(e2.message); });
   }
+});
+document.addEventListener('change', function(e){
+  if (e.target.id === 'pstatus'){ var sp = DATA.posts.filter(function(x){ return x.id === st.sel; })[0]; sp.Status = e.target.value; render(); savePost(st.sel, {Status: e.target.value}, 'Status: ' + e.target.value); }
 });
 document.addEventListener('input', function(e){
   var map = {nt:'nerr', bnew:'berr', inew:'ierr', pw:'pwerr'};
